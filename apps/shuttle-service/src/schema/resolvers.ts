@@ -4,6 +4,7 @@ import { GraphQLScalarType, Kind } from 'graphql';
 import { generateScheduleCode, NotFoundError } from '@travelplatform/shared-utils';
 
 import { prisma } from '../prisma.js';
+import { getProviderRegistry, ProviderCode } from '../providers/index.js';
 
 const DateTimeScalar = new GraphQLScalarType({
   name: 'DateTime',
@@ -54,18 +55,27 @@ const DateScalar = new GraphQLScalarType({
   },
 });
 
+// Helper to format date as YYYY-MM-DD
+function formatDateString(date: Date): string {
+  return date.toISOString().split('T')[0] ?? '';
+}
+
 export const resolvers = {
   DateTime: DateTimeScalar,
   Date: DateScalar,
 
   Query: {
+    // ─────────────────────────────────────────────
+    // Internal Data Queries
+    // ─────────────────────────────────────────────
+
     cities: () => prisma.city.findMany({ orderBy: { name: 'asc' } }),
 
     city: (_: unknown, { id }: { id: string }) => prisma.city.findUnique({ where: { id } }),
 
     counters: (_: unknown, { cityId }: { cityId?: string }) =>
       prisma.counter.findMany({
-        where: { cityId, isActive: true },
+        where: { ...(cityId && { cityId }), isActive: true },
         orderBy: { name: 'asc' },
       }),
 
@@ -125,6 +135,88 @@ export const resolvers = {
     },
 
     schedule: (_: unknown, { id }: { id: string }) => prisma.schedule.findUnique({ where: { id } }),
+
+    // ─────────────────────────────────────────────
+    // Provider-based Queries (External APIs)
+    // ─────────────────────────────────────────────
+
+    enabledProviders: async () => {
+      const registry = getProviderRegistry();
+      const providerCodes = registry.getEnabledProviderCodes();
+      const healthResults = await registry.healthCheckAll();
+
+      return providerCodes.map((code) => {
+        const provider = registry.getProvider(code);
+        return {
+          code,
+          name: provider?.name ?? code,
+          isHealthy: healthResults.get(code) ?? false,
+        };
+      });
+    },
+
+    providerCities: async (_: unknown, { providerCode }: { providerCode?: ProviderCode }) => {
+      const registry = getProviderRegistry();
+
+      if (providerCode) {
+        const provider = registry.getProvider(providerCode);
+        if (!provider) {
+          throw new NotFoundError('Provider', providerCode);
+        }
+        return provider.getCities();
+      }
+
+      // Get from all providers
+      return registry.getAllCities();
+    },
+
+    providerOriginOutlets: async (_: unknown, { providerCode, cityId }: { providerCode: ProviderCode; cityId?: string }) => {
+      const registry = getProviderRegistry();
+      return registry.getOriginOutlets(providerCode, cityId);
+    },
+
+    providerDestinationOutlets: async (_: unknown, { providerCode, originOutletId }: { providerCode: ProviderCode; originOutletId: string }) => {
+      const registry = getProviderRegistry();
+      return registry.getDestinationOutlets(providerCode, originOutletId);
+    },
+
+    providerSchedules: async (
+      _: unknown,
+      { input }: { input: { providerCode?: ProviderCode; originOutletId: string; destinationOutletId: string; departureDate: Date; passengers?: number } }
+    ) => {
+      const registry = getProviderRegistry();
+      const params = {
+        originOutletId: input.originOutletId,
+        destinationOutletId: input.destinationOutletId,
+        departureDate: formatDateString(input.departureDate),
+        passengers: input.passengers ?? 1,
+      };
+
+      if (input.providerCode) {
+        const provider = registry.getProvider(input.providerCode);
+        if (!provider) {
+          throw new NotFoundError('Provider', input.providerCode);
+        }
+        return provider.searchSchedules(params);
+      }
+
+      // Search from all providers
+      return registry.searchSchedulesFromAll(params);
+    },
+
+    providerSeatLayout: async (
+      _: unknown,
+      { input }: { input: { providerCode: ProviderCode; scheduleId: string; departureDate: Date; originOutletId: string; destinationOutletId: string } }
+    ) => {
+      const registry = getProviderRegistry();
+      return registry.getSeatLayout(
+        input.providerCode,
+        input.scheduleId,
+        formatDateString(input.departureDate),
+        input.originOutletId,
+        input.destinationOutletId
+      );
+    },
   },
 
   Mutation: {
@@ -191,43 +283,10 @@ export const resolvers = {
     },
   },
 
-  City: {
-    counters: (parent: { id: string }) =>
-      prisma.counter.findMany({ where: { cityId: parent.id, isActive: true } }),
-  },
+  // ─────────────────────────────────────────────
+  // Type Resolvers with Federation References
+  // ─────────────────────────────────────────────
 
-  Counter: {
-    city: (parent: { cityId: string }) => prisma.city.findUnique({ where: { id: parent.cityId } }),
-  },
-
-  Route: {
-    origin: (parent: { originId: string }) => prisma.counter.findUnique({ where: { id: parent.originId } }),
-    destination: (parent: { destinationId: string }) => prisma.counter.findUnique({ where: { id: parent.destinationId } }),
-    schedules: (parent: { id: string }, { filter }: { filter?: { departureDate?: Date; status?: string } }) => {
-      const where: Prisma.ScheduleWhereInput = { routeId: parent.id };
-
-      if (filter?.departureDate) {
-        const startOfDay = new Date(filter.departureDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(filter.departureDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.departureTime = { gte: startOfDay, lte: endOfDay };
-      }
-
-      if (filter?.status) {
-        where.status = filter.status as Prisma.EnumScheduleStatusFilter;
-      }
-
-      return prisma.schedule.findMany({ where, orderBy: { departureTime: 'asc' } });
-    },
-  },
-
-  Schedule: {
-    route: (parent: { routeId: string }) => prisma.route.findUnique({ where: { id: parent.routeId } }),
-    vehicle: (parent: { vehicleId: string }) => prisma.vehicle.findUnique({ where: { id: parent.vehicleId } }),
-  },
-
-  // Federation reference resolvers
   City: {
     __resolveReference: (ref: { id: string }) => prisma.city.findUnique({ where: { id: ref.id } }),
     counters: (parent: { id: string }) =>

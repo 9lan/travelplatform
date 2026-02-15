@@ -7,6 +7,7 @@ import express from 'express';
 import { type UserContext } from '@travelplatform/shared-types';
 
 import { prisma } from './prisma.js';
+import { getProviderRegistry, initializeProviders } from './providers/index.js';
 import { resolvers } from './schema/resolvers.js';
 import { typeDefs } from './schema/typeDefs.js';
 
@@ -16,6 +17,13 @@ export interface ServiceContext {
 }
 
 async function main() {
+  // Initialize shuttle providers (Tiketux, Traveloka, RedBus, etc.)
+  console.log('🔄 Initializing shuttle providers...');
+  await initializeProviders();
+  const registry = getProviderRegistry();
+  const enabledProviders = registry.getEnabledProviderCodes();
+  console.log(`✅ Enabled providers: ${enabledProviders.join(', ') || 'none'}`);
+
   const schema = buildSubgraphSchema({ typeDefs, resolvers });
 
   const server = new ApolloServer<ServiceContext>({
@@ -33,6 +41,25 @@ async function main() {
       res.json({ status: 'ok', service: 'shuttle-service', timestamp: new Date().toISOString() });
     } catch (error) {
       res.status(503).json({ status: 'error', service: 'shuttle-service', error: 'Database connection failed' });
+    }
+  });
+
+  // Provider health check
+  app.get('/health/providers', async (_, res) => {
+    try {
+      const healthResults = await registry.healthCheckAll();
+      const providers: Record<string, boolean> = {};
+      healthResults.forEach((isHealthy, code) => {
+        providers[code] = isHealthy;
+      });
+      res.json({
+        status: 'ok',
+        service: 'shuttle-service',
+        providers,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(503).json({ status: 'error', error: 'Provider health check failed' });
     }
   });
 
@@ -59,6 +86,7 @@ async function main() {
   app.listen(port, () => {
     console.log(`🚌 Shuttle Service ready at http://localhost:${port}/graphql`);
     console.log(`📊 Health check at http://localhost:${port}/health`);
+    console.log(`🔌 Provider health at http://localhost:${port}/health/providers`);
   });
 }
 
