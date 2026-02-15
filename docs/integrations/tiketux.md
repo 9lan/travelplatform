@@ -43,7 +43,7 @@ Tiketux is a shuttle/bus ticketing platform that provides API access for searchi
 
 ```bash
 # Required
-TIKETUX_BASE_URL=https://api.tiketux.com
+TIKETUX_BASE_URL=https://daytrans.asmat.app/api-whitelabel
 TIKETUX_CLIENT_ID=your_client_id
 TIKETUX_CLIENT_SECRET=your_client_secret
 

@@ -1,0 +1,532 @@
+{
+  "info": {
+    "_postman_id": "36813690-88a1-48a0-8a54-3470204432c0",
+    "name": "Traveloka API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "25304649",
+    "_collection_link": "https://go.postman.co/collection/25304649-36813690-88a1-48a0-8a54-3470204432c0?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "OAuth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if(jsonData.access_token){",
+                  "    console.log(`jsonData.access_token : ${jsonData.access_token}`)",
+                  "    pm.environment.set(\"TRAVELOKA_TOKEN\", jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "client_id",
+                  "value": "{{TRAVELOKA_CLIENT_ID}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "{{TRAVELOKA_CLIENT_SECRET}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{TRAVELOKA_URL_AUTH}}/oauth/accesstoken",
+              "host": [
+                "{{TRAVELOKA_URL_AUTH}}"
+              ],
+              "path": [
+                "oauth",
+                "accesstoken"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bus/Shuttle",
+      "item": [
+        {
+          "name": "Data",
+          "item": [
+            {
+              "name": "Get Route Point",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"page\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-route-points",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-route-points"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get City",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"page\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-cities",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-cities"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Destination Points",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"originPointCode\": \"p1669\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-destination-points",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-destination-points"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Origin Points",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"destinationPointCode\": \"p695\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-origin-points",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-origin-points"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Provider Inventory Info",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"skuId\": \"8870\",\n  \"providerId\": \"PTEKASARILORENA\",\n  \"departureDateTime\": {\n    \"specificDate\": {\n      \"monthDayYear\": {\n        \"month\": 4,\n        \"day\": 30,\n        \"year\": 2025\n      },\n      \"hourMinute\": {\n        \"hour\": 13,\n        \"minute\": 30\n      }\n    },\n    \"timeZoneId\": \"Asia/Jakarta\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-provider-inventory-info",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-provider-inventory-info"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Search",
+          "item": [
+            {
+              "name": "Get Inventory",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n//c48 => Jakarta; c122 => Surabaya; c103=> Malang; c73 => Semarang; c539=> Riau; c564 => Bali; c41 => Sumedang; c9 => Bandar Lampung\n  \"originCode\": \"c48\",\n  \"destinationCode\": \"c103\",\n  \"departureDate\": {\n    \"month\": 1,\n    \"day\": 10,\n    \"year\": 2025\n  },\n//   \"returnDate\": {\n//     \"month\": 10,\n//     \"day\": 21,\n//     \"year\": 2023\n//   },\n  \"numOfAdults\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-inventories",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-inventories"
+                  ]
+                },
+                "description": "Provides the list of bus inventories from origin point to destination point.\n\n1. Set the return date for round trip.\n    \n2. You can search bus using both point code & city code.\n    \n3. The maximum number of adults is 4 pax.\n    \n4. UNAVAILABLE_ALREADY_PASSED_TTD status in inventory is the inventory that you can’t book anymore, TTD is Time to Departure so that you can’t booked bus that is leaving soon.\n    \n5. Fare represents bus counter price, if there's promotion we will give the promo price on fare and the oldFare will be filled with bus counter price.\n    \n6. BusAffiliationPAPISearchStatus:\n    \n    - _AVAILABLE_: There is available inventories from origin code and destination code.\n        \n    - _UNAVAILABLE_SUGGEST_BY_CITY_: There is no available inventories from origin code and destination code, but still available from origin city code and destination city code.\n        \n    - _UNAVAILABLE_SUGGEST_CONNECTING_: There is no available inventories from origin code and destination code, but still available from connecting bus.\n        \n    - _UNAVAILABLE_NO_ALTERNATIVES_: There is no available inventory from origin code and destination code."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Seating",
+          "item": [
+            {
+              "name": "Get Seat Map",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"routeId\": \"114059\",\n    \"skuId\": \"8838\",\n    \"providerId\": \"PTEKASARILORENA\",\n    \"providerName\": \"LORENA\",\n    \"pickUpPointCode\": \"p2\",\n    \"dropOffPointCode\": \"p67\",\n    \"departureDateTime\": {\n      \"specificDate\": {\n          \"monthDayYear\": {\n            \"month\": 1,\n            \"day\": 2025,\n            \"year\": 18\n          },\n          \"hourMinute\": {\n            \"hour\": 13,\n            \"minute\": 0\n          }\n        },\n      \"timeZoneId\": \"Asia/Jakarta\"\n    },\n    \"arrivalDateTime\": {\n      \"specificDate\": {\n          \"monthDayYear\": {\n            \"month\": 1,\n            \"day\": 2025,\n            \"year\": 19\n          },\n          \"hourMinute\": {\n            \"hour\": 3,\n            \"minute\": 15\n          }\n        },\n      \"timeZoneId\": \"Asia/Jakarta\"\n    },\n    \"numOfAdults\": 1\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/get-seat-map",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "get-seat-map"
+                  ]
+                },
+                "description": "Provides bus seat map with available seat, if the bus provider provides the seat selection.\n\n1. The bus with more than one wagon is double decker bus\n2. **Grid Type:**\n    \n    - SEAT\n    - TOILET\n    - SMOKING_SPACE\n    - DRIVER\n    - EXIT\n    - OTHER_LABEL\n    - EMPTY\n    - UPWARD_STAIRS\n    - DOWNWARD_STAIRS\n        \n3. **Grid Status**:\n    \n    - AVAILABLE (if seat is available)\n        \n    - NOT_AVAILABLE_ANOTHER_SUBCLASS (if seat is not spec class)\n        \n    - NOT_AVAILABLE_TAKEN (if seat is already taken)\n        \n    - NOT_APPLICABLE (if not seat type)"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Booking",
+          "item": [
+            {
+              "name": "Booking",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookingContact\": {\n    \"salutation\": \"Mr\",\n    \"firstName\": \"Jet Lieee\",\n    \"lastName\": \"Jet Lieee\",\n    \"email\": \"jetlie233@gmail.com\",\n    \"phoneNumber\": {\n      \"countryCode\": \"62\",\n      \"phoneNumber\": \"082288015711\"\n    }\n  },\n  \"departBookings\": [\n    {\n      \"routeId\": \"114059\",\n      \"skuId\": \"8838\",\n      \"providerId\": \"PTEKASARILORENA\",\n      \"providerName\": \"LORENA\",\n      \"pickUpPointCode\": \"p2\",\n      \"dropOffPointCode\": \"p67\",\n      \"busTripCode\": \"LS-420\",\n      \"seatClass\": \"Super Executive\",\n      \"seatSubclass\": \"Penumpang\",\n      \"specificDepartDateTime\": {\n        \"specificDate\": {\n          \"monthDayYear\": {\n            \"month\": 1,\n            \"day\": 2025,\n            \"year\": 18\n          },\n          \"hourMinute\": {\n            \"hour\": 13,\n            \"minute\": 0\n          }\n        },\n        \"timeZoneId\": \"Asia/Jakarta\"\n      },\n      \"specificArrivalDateTime\": {\n        \"specificDate\": {\n          \"monthDayYear\": {\n            \"month\": 1,\n            \"day\": 2025,\n            \"year\": 19\n          },\n          \"hourMinute\": {\n            \"hour\": 3,\n            \"minute\": 15\n          }\n        },\n        \"timeZoneId\": \"Asia/Jakarta\"\n      },\n      \"adultPassengers\": [\n        {\n          \"salutation\": \"Mr\",\n          \"firstName\": \"Jet Lieee\",\n          \"lastName\": \"Jet Lieee\",\n          \"wagonId\": \"-\",\n          \"seatNumber\": \"2F\",\n          \"passengerIdentity\": {\n            \"idType\": \"KTP\",\n            \"value\": \"1234567890123456\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/booking",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "booking"
+                  ]
+                },
+                "description": "To book a bus as requested by customers.\n\n- Set the return date for round trip\n    \n- Always check the price given in the booking response, as there might some cases that the price given in the search result is no longer valid. You should notify the customer if this happens before proceeding to the payment process.\n    \n- Validate that no passengers in one booking has the same exact name.\n    \n- Validate that no passenger name contains any special character.\n    \n- Validate the mobile phone number length is 10 digits at minimum.(the phone number country code without “+” e.g: 62)\n    \n- Ideally, maximum characters for each firstName and lastName are 20 characters and the minimum for each is 2 characters.\n    \n- If you get timeout response during booking API request call, try to call booking status API to check whether the booking has successfully been made.\n    \n- Pax 2 years and above must buy a ticket.\n    \n- The maximum number of adults in one booking is 4 pax."
+              },
+              "response": [
+                {
+                  "name": "Booking",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "{{TRAVELOKA_TOKEN}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"bookingContact\": {\n        \"salutation\": \"MR\",\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"email\": \"john.doe@email.com\",\n        \"phoneNumber\": {\n            \"countryCode\": \"62\",\n            \"phoneNumber\": \"81323456789\"\n        }\n    },\n    \"departBookings\": [\n        {\n            \"pickUpPointCode\": \"p1\",\n            \"dropOffPointCode\": \"p2\",\n            \"routeId\": \"54425\",\n            \"skuId\": \"123\",\n            \"busTripCode\": \"PK-402\",\n            \"providerId\": \"PTPahalaKencana\",\n            \"specificDepartDateTime\": {\n                \"specificDate\": {\n                    \"monthDayYear\": {\n                        \"month\": 1,\n                        \"day\": 1,\n                        \"year\": 2019\n                    },\n                    \"hourMinute\": {\n                        \"hour\": 13,\n                        \"minute\": 45\n                    }\n                },\n                \"timeZoneId\": \"Asia/Jakarta\"\n            },\n            \"specificArrivalDateTime\": {\n                \"specificDate\": {\n                    \"monthDayYear\": {\n                        \"month\": 1,\n                        \"day\": 1,\n                        \"year\": 2019\n                    },\n                    \"hourMinute\": {\n                        \"hour\": 13,\n                        \"minute\": 45\n                    }\n                },\n                \"timeZoneId\": \"Asia/Jakarta\"\n            },\n            \"seatClass\": \"Executive\",\n            \"seatSubclass\": \"A\",\n            \"adultPassengers\": [\n                {\n                    \"salutation\": \"MR\",\n                    \"firstName\": \"John\",\n                    \"lastName\": \"Doe\",\n                    \"passengerIdentity\": {\n                        \"idType\": \"KTP\",\n                        \"value\": \"1231231243445\"\n                    },\n                    \"wagonId\": \"1\",\n                    \"seatNumber\": \"1A\"\n                }\n            ]\n        }\n    ],\n    \"returnBookings\": [\n        {\n            \"pickUpPointCode\": \"p1\",\n            \"dropOffPointCode\": \"p2\",\n            \"routeId\": \"54425\",\n            \"skuId\": \"123\",\n            \"busTripCode\": \"PK-402\",\n            \"providerId\": \"PTPahalaKencana\",\n            \"specificDepartDateTime\": {\n                \"specificDate\": {\n                    \"monthDayYear\": {\n                        \"month\": 1,\n                        \"day\": 1,\n                        \"year\": 2019\n                    },\n                    \"hourMinute\": {\n                        \"hour\": 13,\n                        \"minute\": 45\n                    }\n                },\n                \"timeZoneId\": \"Asia/Jakarta\"\n            },\n            \"specificArrivalDateTime\": {\n                \"specificDate\": {\n                    \"monthDayYear\": {\n                        \"month\": 1,\n                        \"day\": 1,\n                        \"year\": 2019\n                    },\n                    \"hourMinute\": {\n                        \"hour\": 13,\n                        \"minute\": 45\n                    }\n                },\n                \"timeZoneId\": \"Asia/Jakarta\"\n            },\n            \"seatClass\": \"Executive\",\n            \"seatSubclass\": \"A\",\n            \"adultPassengers\": [\n                {\n                    \"salutation\": \"MR\",\n                    \"firstName\": \"John\",\n                    \"lastName\": \"Doe\",\n                    \"passengerIdentity\": {\n                        \"idType\": \"KTP\",\n                        \"value\": \"1231231243445\"\n                    },\n                    \"wagonId\": \"1\",\n                    \"seatNumber\": \"1A\"\n                }\n            ]\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{TRAVELOKA_URL_API}}/bus/booking",
+                      "host": [
+                        "{{TRAVELOKA_URL_API}}"
+                      ],
+                      "path": [
+                        "bus",
+                        "booking"
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": null,
+                  "header": null,
+                  "cookie": [],
+                  "body": null
+                }
+              ]
+            },
+            {
+              "name": "Cancle Booking",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"travelokaBookingId\": 101546753\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/cancel-booking",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "cancel-booking"
+                  ]
+                },
+                "description": "To cancel the booking as requested by customers.\n\n- Traveloka booking id from create booking response"
+              },
+              "response": []
+            },
+            {
+              "name": "Check Booking",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"travelokaBookingId\": 101546753\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/check-booking",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "check-booking"
+                  ]
+                },
+                "description": "1. To check the booking status as requested by customers.\n    \n2. Booking status definition:\n    \n\n- BOOKED: the booking has successfully confirmed but the respective e-ticket is not yet issued.\n    \n- ISSUED: the payment for the respective booking has been verified and the e-ticket has been issued.\n    \n- CANCELLED: the booking expiration time (from Traveloka to provider) of the respective booking has already been exceeded, and thus the booking is cancelled.\n    \n- FAILED: status when there is a system distruption"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Issuance",
+          "item": [
+            {
+              "name": "Issue Booking",
+              "request": {
+                "auth": {
+                  "type": "apikey"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRAVELOKA_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"travelokaBookingId\": 1184826609,\n  \"paymentMethod\": \"NON_CREDIT_CARD\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{TRAVELOKA_URL_API}}/bus/issue-booking",
+                  "host": [
+                    "{{TRAVELOKA_URL_API}}"
+                  ],
+                  "path": [
+                    "bus",
+                    "issue-booking"
+                  ]
+                },
+                "description": "1. To issue the booking as requested by customers.\n    \n2. The ticket number (if not null) needs to be printed as a qrcode on eticket.  \n    Status:\n    \n\n- OK: Your booking ID successfully issued.\n    \n- PAYMENT_CONFIRMED: Your booking ID confirmed payment but still process to issue.\n    \n- FAILED: There was an error when issuing your booking, please try to contact us.\n    \n- ALREADY_ISSUED: Your booking ID was already issued.\n    \n- ALREADY_CANCELLED: Your booking ID was already cancelled/expired.\n    \n- INVALID_AFFILIATE: Your booking ID is not yours.\n    \n- BOOKING_NOT_FOUND: Your booking ID is not found."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
