@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  customerId      String
+  scheduleId      String
+  status          BookingStatus @default(PENDING)
+  totalAmount     Float
+  discountAmount  Float         @default(0)
+  finalAmount     Float
+  currency        String        @default("IDR")
+  voucherId       String?
+  seatLockId      String?
+  paymentId       String?
+  notes           String?
+  expiresAt       DateTime
+  confirmedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  travelers       Traveler[]
+  seatIds         String[]
+  priceSnapshot   Json          // Price breakdown at time of booking
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([customerId])
+  @@index([scheduleId])
+  @@index([status])
+  @@index([code])
+  @@index([expiresAt])
+}
+
+model Traveler {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seatId      String
+  name        String
+  idType      IdType?
+  idNumber    String?
+  phone       String?
+  email       String?
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([seatId])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+enum IdType {
+  KTP
+  SIM
+  PASSPORT
+  OTHER
+}

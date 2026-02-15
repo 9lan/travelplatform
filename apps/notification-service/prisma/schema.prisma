@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  customerId  String
+  templateId  String?
+  template    NotificationTemplate? @relation(fields: [templateId], references: [id])
+  channel     NotificationChannel
+  type        NotificationType
+  title       String
+  body        String
+  data        Json?              // Additional data payload
+  status      NotificationStatus @default(PENDING)
+  sentAt      DateTime?
+  readAt      DateTime?
+  failedAt    DateTime?
+  failReason  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([customerId])
+  @@index([channel])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NotificationTemplate {
+  id            String            @id @default(cuid())
+  code          String            @unique
+  name          String
+  channel       NotificationChannel
+  type          NotificationType
+  subject       String?           // For email
+  title         String
+  body          String            // Supports template variables {{variable}}
+  isActive      Boolean           @default(true)
+  notifications Notification[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([code])
+  @@index([channel])
+  @@index([type])
+  @@index([isActive])
+}
+
+model DeviceToken {
+  id          String       @id @default(cuid())
+  customerId  String
+  token       String       @unique
+  platform    Platform
+  deviceInfo  Json?        // Device metadata
+  isActive    Boolean      @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([customerId])
+  @@index([token])
+  @@index([isActive])
+}
+
+model BulkNotificationJob {
+  id          String              @id @default(cuid())
+  name        String
+  templateId  String
+  channel     NotificationChannel
+  filters     Json?               // Customer filters
+  totalCount  Int                 @default(0)
+  sentCount   Int                 @default(0)
+  failedCount Int                 @default(0)
+  status      BulkJobStatus       @default(PENDING)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdBy   String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+  SMS
+  IN_APP
+  WHATSAPP
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  BOOKING_REMINDER
+  BOOKING_CANCELLED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  PAYMENT_REMINDER
+  DEPARTURE_REMINDER
+  TRIP_COMPLETED
+  PROMO
+  SYSTEM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum Platform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum BulkJobStatus {
+  PENDING
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}

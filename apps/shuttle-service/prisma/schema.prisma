@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model City {
+  id        String    @id @default(cuid())
+  name      String
+  province  String
+  counters  Counter[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([province])
+}
+
+model Counter {
+  id                String     @id @default(cuid())
+  code              String     @unique
+  name              String
+  cityId            String
+  city              City       @relation(fields: [cityId], references: [id])
+  address           String
+  latitude          Float
+  longitude         Float
+  isActive          Boolean    @default(true)
+  originRoutes      Route[]    @relation("OriginCounter")
+  destinationRoutes Route[]    @relation("DestinationCounter")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([cityId])
+  @@index([isActive])
+}
+
+model Route {
+  id                String     @id @default(cuid())
+  code              String     @unique
+  originId          String
+  origin            Counter    @relation("OriginCounter", fields: [originId], references: [id])
+  destinationId     String
+  destination       Counter    @relation("DestinationCounter", fields: [destinationId], references: [id])
+  distance          Float?
+  estimatedDuration Int        // minutes
+  isActive          Boolean    @default(true)
+  schedules         Schedule[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([originId, destinationId])
+  @@index([isActive])
+}
+
+model Vehicle {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String
+  type      VehicleType
+  capacity  Int
+  amenities String[]
+  isActive  Boolean     @default(true)
+  schedules Schedule[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model Schedule {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  routeId       String
+  route         Route          @relation(fields: [routeId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle        @relation(fields: [vehicleId], references: [id])
+  departureTime DateTime
+  arrivalTime   DateTime
+  driverName    String?
+  vehiclePlate  String?
+  status        ScheduleStatus @default(SCHEDULED)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([routeId, departureTime])
+  @@index([status])
+  @@index([departureTime])
+}
+
+enum VehicleType {
+  HIACE
+  MINIBUS
+  BUS
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  BOARDING
+  DEPARTED
+  ARRIVED
+  CANCELLED
+}

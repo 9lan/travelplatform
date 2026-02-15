@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Seat {
+  id         String     @id @default(cuid())
+  scheduleId String
+  layoutId   String
+  layout     SeatLayout @relation(fields: [layoutId], references: [id])
+  seatNumber String
+  seatType   SeatType   @default(REGULAR)
+  status     SeatStatus @default(AVAILABLE)
+  bookingId  String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([scheduleId, seatNumber])
+  @@index([scheduleId])
+  @@index([status])
+}
+
+model SeatLayout {
+  id        String   @id @default(cuid())
+  vehicleId String   @unique
+  name      String
+  rows      Int
+  columns   Int
+  layout    Json     // JSON representation of seat positions
+  seats     Seat[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+}
+
+model SeatLock {
+  id         String         @id @default(cuid())
+  scheduleId String
+  seatIds    String[]
+  customerId String?
+  sessionId  String
+  status     SeatLockStatus @default(ACTIVE)
+  expiresAt  DateTime
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([scheduleId])
+  @@index([sessionId])
+  @@index([status, expiresAt])
+}
+
+enum SeatType {
+  REGULAR
+  PREMIUM
+  VIP
+}
+
+enum SeatStatus {
+  AVAILABLE
+  LOCKED
+  BOOKED
+  BLOCKED
+}
+
+enum SeatLockStatus {
+  ACTIVE
+  CONFIRMED
+  EXPIRED
+  RELEASED
+}

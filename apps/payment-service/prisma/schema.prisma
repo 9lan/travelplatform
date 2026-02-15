@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Payment {
+  id              String          @id @default(cuid())
+  bookingId       String          @unique
+  customerId      String
+  amount          Float
+  currency        String          @default("IDR")
+  status          PaymentStatus   @default(PENDING)
+  paymentMethod   String
+  gatewayRef      String?         // External gateway reference
+  gatewayResponse Json?           // Response from payment gateway
+  expiresAt       DateTime
+  paidAt          DateTime?
+  transactions    Transaction[]
+  refunds         Refund[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([status])
+  @@index([gatewayRef])
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  paymentId       String
+  payment         Payment           @relation(fields: [paymentId], references: [id])
+  type            TransactionType
+  amount          Float
+  status          TransactionStatus @default(PENDING)
+  gatewayRef      String?
+  gatewayResponse Json?
+  processedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([paymentId])
+  @@index([type])
+  @@index([status])
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  paymentId       String
+  payment         Payment      @relation(fields: [paymentId], references: [id])
+  amount          Float
+  reason          String
+  status          RefundStatus @default(PENDING)
+  gatewayRef      String?
+  gatewayResponse Json?
+  requestedBy     String
+  approvedBy      String?
+  processedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([paymentId])
+  @@index([status])
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  type        String   // CREDIT_CARD, BANK_TRANSFER, EWALLET, QRIS, VIRTUAL_ACCOUNT
+  provider    String   // MIDTRANS, XENDIT, etc.
+  isActive    Boolean  @default(true)
+  config      Json?    // Provider-specific configuration
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  EXPIRED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum TransactionType {
+  CHARGE
+  REFUND
+  CHARGEBACK
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}

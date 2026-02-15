@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Voucher {
+  id              String         @id @default(cuid())
+  code            String         @unique
+  campaignId      String?
+  campaign        Campaign?      @relation(fields: [campaignId], references: [id])
+  type            VoucherType
+  value           Float          // Percentage or fixed amount
+  maxDiscount     Float?         // Max discount for percentage vouchers
+  minPurchase     Float?         // Minimum purchase amount
+  usageLimit      Int?           // Total usage limit
+  usageCount      Int            @default(0)
+  perUserLimit    Int            @default(1)
+  routeIds        String[]       // Empty means all routes
+  isActive        Boolean        @default(true)
+  validFrom       DateTime
+  validTo         DateTime
+  usages          VoucherUsage[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([code])
+  @@index([campaignId])
+  @@index([isActive])
+  @@index([validFrom, validTo])
+}
+
+model Campaign {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  type        CampaignType
+  budget      Float?
+  spent       Float         @default(0)
+  isActive    Boolean       @default(true)
+  startDate   DateTime
+  endDate     DateTime
+  vouchers    Voucher[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+  @@index([startDate, endDate])
+}
+
+model VoucherUsage {
+  id          String   @id @default(cuid())
+  voucherId   String
+  voucher     Voucher  @relation(fields: [voucherId], references: [id])
+  customerId  String
+  bookingId   String
+  discount    Float
+  usedAt      DateTime @default(now())
+
+  @@unique([voucherId, bookingId])
+  @@index([voucherId])
+  @@index([customerId])
+  @@index([bookingId])
+}
+
+model CashbackBalance {
+  id           String                @id @default(cuid())
+  customerId   String                @unique
+  balance      Float                 @default(0)
+  pendingBalance Float              @default(0)
+  totalEarned  Float                 @default(0)
+  totalRedeemed Float                @default(0)
+  transactions CashbackTransaction[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([customerId])
+}
+
+model CashbackTransaction {
+  id                String              @id @default(cuid())
+  cashbackBalanceId String
+  cashbackBalance   CashbackBalance     @relation(fields: [cashbackBalanceId], references: [id])
+  type              CashbackType
+  amount            Float
+  bookingId         String?
+  description       String?
+  status            CashbackStatus      @default(PENDING)
+  releaseAt         DateTime?           // When pending cashback becomes available
+  processedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([cashbackBalanceId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([releaseAt])
+}
+
+enum VoucherType {
+  PERCENTAGE
+  FIXED
+  FREE_UPGRADE
+}
+
+enum CampaignType {
+  SEASONAL
+  REFERRAL
+  LOYALTY
+  PARTNERSHIP
+  PROMOTIONAL
+}
+
+enum CashbackType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  ADJUSTED
+}
+
+enum CashbackStatus {
+  PENDING
+  RELEASED
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}

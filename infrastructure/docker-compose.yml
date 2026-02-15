@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────
+  # Infrastructure
+  # ─────────────────────────────────────────────
+  postgres-shuttle:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shuttle
+      POSTGRES_PASSWORD: shuttle_dev
+      POSTGRES_DB: shuttle
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_shuttle:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shuttle"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-seat:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: seat
+      POSTGRES_PASSWORD: seat_dev
+      POSTGRES_DB: seat
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_seat:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-pricing:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pricing
+      POSTGRES_PASSWORD: pricing_dev
+      POSTGRES_DB: pricing
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_pricing:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pricing"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-booking:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking_dev
+      POSTGRES_DB: booking
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_booking:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: payment_dev
+      POSTGRES_DB: payment
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_payment:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-promo:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: promo
+      POSTGRES_PASSWORD: promo_dev
+      POSTGRES_DB: promo
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_promo:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U promo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-notification:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: notification
+      POSTGRES_PASSWORD: notification_dev
+      POSTGRES_DB: notification
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_notification:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_shuttle:
+  postgres_seat:
+  postgres_pricing:
+  postgres_booking:
+  postgres_payment:
+  postgres_promo:
+  postgres_notification:
+  redis_data:
