@@ -66,11 +66,11 @@ export const typeDefs = gql`
     pageInfo: PageInfo!
   }
 
-  type PageInfo {
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: String
-    endCursor: String
+  type PageInfo @shareable {
+    hasNextPage: Boolean! @shareable
+    hasPreviousPage: Boolean! @shareable
+    startCursor: String @shareable
+    endCursor: String @shareable
   }
 
   # Extend Schedule from shuttle-service
