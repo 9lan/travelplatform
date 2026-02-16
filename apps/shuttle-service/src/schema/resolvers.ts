@@ -1,4 +1,4 @@
-import { type Prisma } from '@prisma/client';
+import { type Prisma } from '../generated/prisma';
 import { GraphQLScalarType, Kind } from 'graphql';
 
 import { generateScheduleCode, NotFoundError } from '@travelplatform/shared-utils';

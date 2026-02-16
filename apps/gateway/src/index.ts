@@ -1,11 +1,11 @@
 import { ApolloGateway, IntrospectAndCompose, RemoteGraphQLDataSource } from '@apollo/gateway';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
+import { type UserContext } from '@travelplatform/shared-types';
 import cors from 'cors';
 import express, { type Request } from 'express';
 import { expressjwt } from 'express-jwt';
 
-import { type UserContext } from '@travelplatform/shared-types';
 
 import { complexityPlugin } from './plugins/complexity.js';
 import { loggingPlugin } from './plugins/logging.js';
@@ -31,13 +31,16 @@ const SUBGRAPHS = [
 ];
 
 class AuthenticatedDataSource extends RemoteGraphQLDataSource<GatewayContext> {
-  override willSendRequest({ request, context }: { request: { http?: { headers: Map<string, string> } }; context: GatewayContext }) {
-    if (context.user) {
-      request.http?.headers.set('x-user-id', context.user.id);
-      request.http?.headers.set('x-user-role', context.user.role);
-      request.http?.headers.set('x-user-email', context.user.email);
+  override willSendRequest({ request, context }: Parameters<NonNullable<RemoteGraphQLDataSource<GatewayContext>['willSendRequest']>>[0]) {
+    const ctx = context as GatewayContext;
+    if (ctx.user && request.http) {
+      request.http.headers.set('x-user-id', ctx.user.id);
+      request.http.headers.set('x-user-role', ctx.user.role);
+      request.http.headers.set('x-user-email', ctx.user.email);
     }
-    request.http?.headers.set('x-request-id', context.requestId);
+    if (request.http) {
+      request.http.headers.set('x-request-id', ctx.requestId);
+    }
   }
 }
 
@@ -48,6 +51,9 @@ async function main() {
       pollIntervalInMs: process.env['NODE_ENV'] === 'development' ? 10000 : 30000,
     }),
     buildService({ url }) {
+      if (!url) {
+        throw new Error('Subgraph URL is required');
+      }
       return new AuthenticatedDataSource({ url });
     },
   });
@@ -73,6 +79,7 @@ async function main() {
   // JWT middleware (optional auth)
   app.use(
     '/graphql',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     expressjwt({
       secret: process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
       algorithms: ['HS256'],
@@ -85,7 +92,7 @@ async function main() {
     cors<cors.CorsRequest>(),
     express.json(),
     expressMiddleware(server, {
-      context: async ({ req }: { req: JWTRequest }): Promise<GatewayContext> => ({
+      context: ({ req }: { req: JWTRequest }): GatewayContext => ({
         user: req.auth ?? null,
         requestId: (req.headers['x-request-id'] as string) ?? crypto.randomUUID(),
       }),

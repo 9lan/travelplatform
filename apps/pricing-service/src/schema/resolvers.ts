@@ -1,4 +1,4 @@
-import { type Prisma } from '@prisma/client';
+import { type Prisma } from '../generated/prisma';
 import { GraphQLScalarType, Kind } from 'graphql';
 
 import { prisma } from '../prisma.js';
@@ -166,22 +166,35 @@ export const resolvers = {
         data: input,
       }),
 
-    createPriceRule: (_: unknown, { input }: { input: { name: string; description?: string; ruleType: string; routeId?: string; conditions: unknown; adjustment: number; adjustmentType: string; priority?: number; validFrom?: Date; validTo?: Date } }) =>
+    createPriceRule: (_: unknown, { input }: { input: { name: string; description?: string; ruleType: string; routeId?: string; conditions: Prisma.InputJsonValue; adjustment: number; adjustmentType: string; priority?: number; validFrom?: Date; validTo?: Date } }) =>
       prisma.priceRule.create({
         data: {
-          ...input,
+          name: input.name,
+          description: input.description,
           ruleType: input.ruleType as 'SURGE' | 'TIME_BASED' | 'DAY_OF_WEEK' | 'ADVANCE_BOOKING' | 'HOLIDAY' | 'PROMOTIONAL',
+          routeId: input.routeId,
+          conditions: input.conditions,
+          adjustment: input.adjustment,
           adjustmentType: input.adjustmentType as 'PERCENTAGE' | 'FIXED',
           priority: input.priority ?? 0,
+          validFrom: input.validFrom,
+          validTo: input.validTo,
         },
       }),
 
-    updatePriceRule: (_: unknown, { id, input }: { id: string; input: { name?: string; description?: string; conditions?: unknown; adjustment?: number; adjustmentType?: string; priority?: number; isActive?: boolean; validFrom?: Date; validTo?: Date } }) =>
+    updatePriceRule: (_: unknown, { id, input }: { id: string; input: { name?: string; description?: string; conditions?: Prisma.InputJsonValue; adjustment?: number; adjustmentType?: string; priority?: number; isActive?: boolean; validFrom?: Date; validTo?: Date } }) =>
       prisma.priceRule.update({
         where: { id },
         data: {
-          ...input,
-          adjustmentType: input.adjustmentType as 'PERCENTAGE' | 'FIXED' | undefined,
+          name: input.name,
+          description: input.description,
+          conditions: input.conditions,
+          adjustment: input.adjustment,
+          adjustmentType: input.adjustmentType ? input.adjustmentType as 'PERCENTAGE' | 'FIXED' : undefined,
+          priority: input.priority,
+          isActive: input.isActive,
+          validFrom: input.validFrom,
+          validTo: input.validTo,
         },
       }),
 

@@ -1,3 +1,4 @@
+import { type Prisma } from '../generated/prisma';
 import { GraphQLScalarType, Kind } from 'graphql';
 
 import { prisma } from '../prisma.js';
@@ -72,10 +73,10 @@ export const resolvers = {
   },
 
   Mutation: {
-    createSeatLayout: (_: unknown, { input }: { input: { vehicleId: string; name: string; rows: number; columns: number; layout: unknown } }) =>
+    createSeatLayout: (_: unknown, { input }: { input: { vehicleId: string; name: string; rows: number; columns: number; layout: Prisma.InputJsonValue } }) =>
       prisma.seatLayout.create({ data: input }),
 
-    updateSeatLayout: (_: unknown, { id, input }: { id: string; input: { name?: string; rows?: number; columns?: number; layout?: unknown } }) =>
+    updateSeatLayout: (_: unknown, { id, input }: { id: string; input: { name?: string; rows?: number; columns?: number; layout?: Prisma.InputJsonValue } }) =>
       prisma.seatLayout.update({
         where: { id },
         data: input,

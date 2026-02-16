@@ -1,4 +1,4 @@
-import { type Prisma } from '@prisma/client';
+import { type Prisma } from '../generated/prisma';
 import { GraphQLScalarType, Kind } from 'graphql';
 
 import { type ServiceContext } from '../index.js';
@@ -305,7 +305,7 @@ export const resolvers = {
       return updatedRefund;
     },
 
-    createPaymentMethod: (_: unknown, { input }: { input: { code: string; name: string; type: string; provider: string; config?: unknown; displayOrder?: number } }) =>
+    createPaymentMethod: (_: unknown, { input }: { input: { code: string; name: string; type: string; provider: string; config?: Prisma.InputJsonValue; displayOrder?: number } }) =>
       prisma.paymentMethod.create({
         data: {
           ...input,
@@ -313,7 +313,7 @@ export const resolvers = {
         },
       }),
 
-    updatePaymentMethod: (_: unknown, { code, input }: { code: string; input: { name?: string; isActive?: boolean; config?: unknown; displayOrder?: number } }) =>
+    updatePaymentMethod: (_: unknown, { code, input }: { code: string; input: { name?: string; isActive?: boolean; config?: Prisma.InputJsonValue; displayOrder?: number } }) =>
       prisma.paymentMethod.update({
         where: { code },
         data: input,

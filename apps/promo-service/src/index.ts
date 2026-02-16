@@ -16,7 +16,8 @@ export interface ServiceContext {
 }
 
 async function main() {
-  const schema = buildSubgraphSchema({ typeDefs, resolvers });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const schema = buildSubgraphSchema({ typeDefs, resolvers: resolvers as any });
 
   const server = new ApolloServer<ServiceContext>({
     schema,
