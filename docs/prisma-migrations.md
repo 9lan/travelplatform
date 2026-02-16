@@ -213,6 +213,139 @@ model City {
 
 ---
 
+## Rollback Strategies
+
+Prisma doesn't have a built-in rollback command. Here are strategies to handle rollbacks:
+
+### Strategy 1: Manual Rollback Migration
+
+Create a new migration that reverses the changes:
+
+```bash
+# Original migration added a column
+pnpm exec prisma migrate dev --name add_country_column
+
+# To rollback, create a reverse migration
+pnpm exec prisma migrate dev --name rollback_add_country_column --create-only
+```
+
+Edit the generated SQL file (`prisma/migrations/<timestamp>_rollback_add_country_column/migration.sql`):
+
+```sql
+-- Reverse: Drop the column that was added
+ALTER TABLE "City" DROP COLUMN "country";
+```
+
+Then apply:
+```bash
+pnpm exec prisma migrate dev
+```
+
+### Strategy 2: Restore from Backup
+
+**Before any migration, create a backup:**
+
+```bash
+# Create backup
+pg_dump -U shuttle -h localhost shuttle > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# If migration fails, restore
+psql -U shuttle -h localhost shuttle < backup_20240101_120000.sql
+
+# Then reset Prisma's migration state
+pnpm exec prisma migrate resolve --rolled-back <migration_name>
+```
+
+### Strategy 3: Reset to Specific Migration
+
+If you have migration history and want to go back:
+
+```bash
+# 1. Mark recent migrations as rolled back
+pnpm exec prisma migrate resolve --rolled-back 20240115_add_country
+
+# 2. Manually reverse changes in database
+psql -U shuttle -h localhost shuttle <<< "ALTER TABLE \"City\" DROP COLUMN \"country\";"
+
+# 3. Update schema.prisma to match the rolled-back state
+
+# 4. Verify sync
+pnpm exec prisma db pull  # Should match your schema
+```
+
+### Strategy 4: Full Reset (Development Only)
+
+**Warning: This deletes ALL data!**
+
+```bash
+# Reset database and reapply all migrations
+pnpm exec prisma migrate reset
+
+# Or with db push (no migration history)
+pnpm exec prisma db push --force-reset
+```
+
+### Strategy 5: Point-in-Time Recovery (Production)
+
+For production databases, use database-level backup solutions:
+
+**PostgreSQL with pg_dump:**
+```bash
+# Scheduled backup (add to cron)
+0 */6 * * * pg_dump -U shuttle shuttle > /backups/shuttle_$(date +\%Y\%m\%d_\%H\%M).sql
+
+# Keep last 7 days
+find /backups -name "shuttle_*.sql" -mtime +7 -delete
+```
+
+**Docker volume backup:**
+```bash
+# Backup
+docker run --rm -v travelplatform_shuttle-db:/data -v $(pwd):/backup alpine tar czf /backup/shuttle-db.tar.gz /data
+
+# Restore
+docker run --rm -v travelplatform_shuttle-db:/data -v $(pwd):/backup alpine tar xzf /backup/shuttle-db.tar.gz -C /
+```
+
+### Rollback Checklist
+
+Before rolling back, verify:
+
+- [ ] Backup exists and is tested
+- [ ] Understand what data will be lost
+- [ ] Application code is compatible with rolled-back schema
+- [ ] Dependent services are notified
+- [ ] Migration state in `_prisma_migrations` table is correct
+
+### Example: Complete Rollback Flow
+
+```bash
+# 1. Stop the application
+pm2 stop shuttle-service
+
+# 2. Backup current state
+pg_dump -U shuttle shuttle > pre_rollback_backup.sql
+
+# 3. Create rollback migration
+cat > prisma/migrations/$(date +%Y%m%d%H%M%S)_rollback/migration.sql << 'EOF'
+-- Rollback: remove country column
+ALTER TABLE "City" DROP COLUMN IF EXISTS "country";
+EOF
+
+# 4. Update schema.prisma (remove the column)
+
+# 5. Apply rollback
+pnpm exec prisma migrate deploy
+
+# 6. Regenerate client
+pnpm exec prisma generate
+
+# 7. Restart application
+pm2 start shuttle-service
+```
+
+---
+
 ## Best Practices
 
 ### 1. Always backup before migrations
