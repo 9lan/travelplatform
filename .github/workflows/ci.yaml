@@ -32,6 +32,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma clients
+        run: pnpm --filter "*-service" db:generate
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @travelplatform/shared-types build
+          pnpm --filter @travelplatform/shared-utils build
+
       - name: Run ESLint
         run: pnpm lint
 
