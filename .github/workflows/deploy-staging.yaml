@@ -5,7 +5,7 @@ on:
     workflows: ["Build and Push Docker Images"]
     types:
       - completed
-    branches: [main]
+    branches: [deploy-stg]
   workflow_dispatch:
 
 concurrency:

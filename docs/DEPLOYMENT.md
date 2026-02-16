@@ -104,11 +104,13 @@ docker build -t travelplatform/gateway:latest -f apps/gateway/Dockerfile .
 
 ### CI/CD Builds
 
-Images are automatically built and pushed to GHCR when code is merged to `main`:
+Images are automatically built and pushed to GHCR when code is pushed or merged to `deploy-prod` (production), `deploy-stg` (staging), and `deploy-dev` (development):
 
 ```
-ghcr.io/<org>/travelplatform/gateway:latest
-ghcr.io/<org>/travelplatform/shuttle-service:latest
+ghcr.io/<org>/travelplatform/gateway:deploy-prod
+ghcr.io/<org>/travelplatform/gateway:deploy-stg
+ghcr.io/<org>/travelplatform/gateway:deploy-dev
+ghcr.io/<org>/travelplatform/shuttle-service:deploy-prod
 # ... etc
 ```
 
