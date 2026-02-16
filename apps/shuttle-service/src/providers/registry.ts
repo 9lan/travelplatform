@@ -81,7 +81,7 @@ export class ProviderRegistry {
         return null;
 
       default:
-        console.warn(`Unknown provider: ${config.code}`);
+        console.warn(`Unknown provider: ${String(config.code)}`);
         return null;
     }
   }

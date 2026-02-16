@@ -65,7 +65,7 @@ export const resolvers = {
         throw new Error(`Price not found for schedule ${scheduleId}`);
       }
 
-      let basePrice = price.basePrice;
+      const basePrice = price.basePrice;
       let seatTypeAdjustment = 0;
 
       // Get seat type pricing

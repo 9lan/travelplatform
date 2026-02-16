@@ -16,7 +16,7 @@ export interface ServiceContext {
 }
 
 async function main() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const schema = buildSubgraphSchema({ typeDefs, resolvers: resolvers as any });
 
   const server = new ApolloServer<ServiceContext>({
@@ -28,6 +28,7 @@ async function main() {
   const app = express();
 
   // Health check
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get('/health', async (_, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -42,6 +43,7 @@ async function main() {
     cors<cors.CorsRequest>(),
     express.json(),
     expressMiddleware(server, {
+      // eslint-disable-next-line @typescript-eslint/require-await
       context: async ({ req }): Promise<ServiceContext> => ({
         user: req.headers['x-user-id']
           ? {

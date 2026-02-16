@@ -11,7 +11,7 @@
  */
 
 import { initializeProviders } from '../providers/index.js';
-import { ProviderCode } from '../providers/types.js';
+import { type ProviderCode } from '../providers/types.js';
 import { runSyncNow, startSyncWorker, type SyncJobData } from '../jobs/sync-providers.js';
 
 async function main(): Promise<void> {
@@ -104,4 +104,4 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+main().catch(console.error);

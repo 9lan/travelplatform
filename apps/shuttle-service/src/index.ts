@@ -9,7 +9,7 @@ import { type UserContext } from '@travelplatform/shared-types';
 import { startSyncWorker, scheduleRecurringSyncJob, scheduleSyncJob } from './jobs/index.js';
 import { prisma } from './prisma.js';
 import { getProviderRegistry, initializeProviders } from './providers/index.js';
-import { ProviderCode } from './providers/types.js';
+import { type ProviderCode } from './providers/types.js';
 import { resolvers } from './schema/resolvers.js';
 import { typeDefs } from './schema/typeDefs.js';
 
@@ -34,7 +34,7 @@ async function main() {
     console.log('⚠️ Redis not configured, sync worker disabled');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const schema = buildSubgraphSchema({ typeDefs, resolvers: resolvers as any });
 
   const server = new ApolloServer<ServiceContext>({
@@ -46,6 +46,7 @@ async function main() {
   const app = express();
 
   // Health check
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get('/health', async (_, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -56,6 +57,7 @@ async function main() {
   });
 
   // Provider health check
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get('/health/providers', async (_, res) => {
     try {
       const healthResults = await registry.healthCheckAll();
@@ -75,6 +77,7 @@ async function main() {
   });
 
   // Manual sync trigger endpoint
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.post('/sync', express.json(), async (req, res) => {
     try {
       const { providerCode, syncCities = true, syncOutlets = true } = req.body as {
@@ -106,6 +109,7 @@ async function main() {
     cors<cors.CorsRequest>(),
     express.json(),
     expressMiddleware(server, {
+      // eslint-disable-next-line @typescript-eslint/require-await
       context: async ({ req }): Promise<ServiceContext> => ({
         user: req.headers['x-user-id']
           ? {

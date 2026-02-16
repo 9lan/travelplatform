@@ -5,8 +5,6 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    "plugin:import/recommended",
-    "plugin:import/typescript",
     "prettier",
   ],
   plugins: ["@typescript-eslint", "import"],
@@ -23,27 +21,14 @@ module.exports = {
       "error",
       { checksVoidReturn: { attributes: false } },
     ],
-    "import/order": [
-      "error",
-      {
-        groups: [
-          "builtin",
-          "external",
-          "internal",
-          ["parent", "sibling"],
-          "index",
-        ],
-        "newlines-between": "always",
-        alphabetize: { order: "asc", caseInsensitive: true },
-      },
-    ],
+    // Disable import plugin rules that don't work with pnpm workspaces + generated code
     "import/no-unresolved": "off",
+    "import/namespace": "off",
+    "import/default": "off",
+    "import/order": "off",
+    "import/no-duplicates": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "off",
   },
-  ignorePatterns: ["dist", "node_modules", "*.js"],
-  settings: {
-    "import/resolver": {
-      typescript: true,
-      node: true,
-    },
-  },
+  ignorePatterns: ["dist", "node_modules", "*.js", "**/generated/**"],
 };

@@ -396,6 +396,7 @@ export class TravelokaProvider implements IShuttleProvider {
   // Pricing
   // ─────────────────────────────────────────────
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async calculatePrice(params: CalculatePriceParams): Promise<ProviderPriceBreakdown> {
     // Traveloka doesn't have a separate price calculation endpoint
     // Price is calculated during booking

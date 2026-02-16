@@ -4,7 +4,7 @@ import { GraphQLScalarType, Kind } from 'graphql';
 import { generateScheduleCode, NotFoundError } from '@travelplatform/shared-utils';
 
 import { prisma } from '../prisma.js';
-import { getProviderRegistry, ProviderCode } from '../providers/index.js';
+import { getProviderRegistry, type ProviderCode } from '../providers/index.js';
 
 const DateTimeScalar = new GraphQLScalarType({
   name: 'DateTime',

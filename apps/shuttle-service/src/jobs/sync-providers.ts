@@ -9,7 +9,7 @@ import { Queue, QueueEvents, Worker, type Job } from 'bullmq';
 
 import { prisma } from '../prisma.js';
 import { getProviderRegistry } from '../providers/index.js';
-import { type ProviderCity, type ProviderOutlet, ProviderCode } from '../providers/types.js';
+import { type ProviderCity, type ProviderOutlet, type ProviderCode } from '../providers/types.js';
 
 // ─────────────────────────────────────────────
 // Types

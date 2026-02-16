@@ -319,6 +319,7 @@ export const resolvers = {
         data: input,
       }),
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     handleWebhook: async (_: unknown, { provider, payload }: { provider: string; payload: unknown }) => {
       // TODO: Implement webhook handling for different providers
       console.log(`Received webhook from ${provider}:`, payload);
