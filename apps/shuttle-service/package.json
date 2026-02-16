@@ -13,7 +13,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "sync": "tsx --env-file .env src/cli/sync.ts",
+    "sync:cities": "tsx --env-file .env src/cli/sync.ts --cities",
+    "sync:outlets": "tsx --env-file .env src/cli/sync.ts --outlets"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
@@ -21,6 +24,7 @@
     "@prisma/client": "^5.9.0",
     "@travelplatform/shared-types": "workspace:*",
     "@travelplatform/shared-utils": "workspace:*",
+    "bullmq": "^5.1.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "graphql": "^16.8.1",

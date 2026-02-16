@@ -6,8 +6,10 @@ import express from 'express';
 
 import { type UserContext } from '@travelplatform/shared-types';
 
+import { startSyncWorker, scheduleRecurringSyncJob, scheduleSyncJob } from './jobs/index.js';
 import { prisma } from './prisma.js';
 import { getProviderRegistry, initializeProviders } from './providers/index.js';
+import { ProviderCode } from './providers/types.js';
 import { resolvers } from './schema/resolvers.js';
 import { typeDefs } from './schema/typeDefs.js';
 
@@ -23,6 +25,14 @@ async function main() {
   const registry = getProviderRegistry();
   const enabledProviders = registry.getEnabledProviderCodes();
   console.log(`✅ Enabled providers: ${enabledProviders.join(', ') || 'none'}`);
+
+  // Start background job worker for provider sync
+  if (process.env['REDIS_URL'] || process.env['REDIS_HOST']) {
+    startSyncWorker();
+    await scheduleRecurringSyncJob();
+  } else {
+    console.log('⚠️ Redis not configured, sync worker disabled');
+  }
 
   const schema = buildSubgraphSchema({ typeDefs, resolvers });
 
@@ -63,6 +73,33 @@ async function main() {
     }
   });
 
+  // Manual sync trigger endpoint
+  app.post('/sync', express.json(), async (req, res) => {
+    try {
+      const { providerCode, syncCities = true, syncOutlets = true } = req.body as {
+        providerCode?: string;
+        syncCities?: boolean;
+        syncOutlets?: boolean;
+      };
+
+      const job = await scheduleSyncJob({
+        providerCode: providerCode as ProviderCode | undefined,
+        syncCities,
+        syncOutlets,
+      });
+
+      res.json({
+        status: 'ok',
+        message: 'Sync job scheduled',
+        jobId: job.id,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ status: 'error', error: message });
+    }
+  });
+
   app.use(
     '/graphql',
     cors<cors.CorsRequest>(),
@@ -87,6 +124,7 @@ async function main() {
     console.log(`🚌 Shuttle Service ready at http://localhost:${port}/graphql`);
     console.log(`📊 Health check at http://localhost:${port}/health`);
     console.log(`🔌 Provider health at http://localhost:${port}/health/providers`);
+    console.log(`🔄 Manual sync at POST http://localhost:${port}/sync`);
   });
 }
 

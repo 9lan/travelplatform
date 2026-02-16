@@ -32,6 +32,7 @@ export interface ProviderOutlet {
   address: string;
   latitude?: number;
   longitude?: number;
+  phone?: string;
   providerCode: ProviderCode;
   providerOutletId: string;
 }

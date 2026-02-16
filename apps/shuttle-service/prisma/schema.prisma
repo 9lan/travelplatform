@@ -8,14 +8,18 @@ datasource db {
 }
 
 model City {
-  id        String    @id @default(cuid())
-  name      String
-  province  String
-  counters  Counter[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  province     String
+  providerCode String?   // TIKETUX, TRAVELOKA, REDBUS
+  providerId   String?   // Provider's city ID
+  counters     Counter[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
+  @@unique([providerCode, providerId])
   @@index([province])
+  @@index([providerCode])
 }
 
 model Counter {
@@ -25,16 +29,21 @@ model Counter {
   cityId            String
   city              City       @relation(fields: [cityId], references: [id])
   address           String
-  latitude          Float
-  longitude         Float
+  latitude          Float      @default(0)
+  longitude         Float      @default(0)
+  phone             String?
+  providerCode      String?    // TIKETUX, TRAVELOKA, REDBUS
+  providerId        String?    // Provider's outlet/point ID
   isActive          Boolean    @default(true)
   originRoutes      Route[]    @relation("OriginCounter")
   destinationRoutes Route[]    @relation("DestinationCounter")
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
+  @@unique([providerCode, providerId])
   @@index([cityId])
   @@index([isActive])
+  @@index([providerCode])
 }
 
 model Route {
