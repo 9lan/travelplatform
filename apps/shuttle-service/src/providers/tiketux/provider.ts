@@ -71,12 +71,12 @@ export class TiketuxProvider implements IShuttleProvider {
     const response = await this.client.post<{ kota: TiketuxCity[] }>('kota');
     const cities = response?.kota ?? [];
 
-    return cities.map((city) => ({
-      id: `TIKETUX_${city.kode_kota}`,
+    return cities?.map((city) => ({
+      id: `TIKETUX_${city.nama_kota}`,
       name: city.nama_kota,
-      ...(city.provinsi && { province: city.provinsi }),
       providerCode: ProviderCode.TIKETUX,
-      providerCityId: city.kode_kota,
+      providerCityId: city.nama_kota,
+      ...(city.provinsi && { province: city.provinsi }),
     }));
   }
 
@@ -109,7 +109,7 @@ export class TiketuxProvider implements IShuttleProvider {
       id: `TIKETUX_${outlet.id}`,
       code: outlet.id,
       name: outlet.nama,
-      cityId: `TIKETUX_${outlet.kode_kota}`,
+      cityId: `TIKETUX_${outlet.nama_kota}`,
       cityName: outlet.kota || outlet.nama_kota || outlet.kode_kota,
       address: outlet.alamat,
       ...(outlet.latitude && { latitude: parseFloat(outlet.latitude) }),

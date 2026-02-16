@@ -130,7 +130,7 @@ async function syncOutletsFromProvider(providerCode: ProviderCode): Promise<{ sy
 
 async function upsertCity(city: ProviderCity): Promise<void> {
   // Extract provider ID from composite ID (e.g., "tiketux_123" -> "123")
-  const providerId = city.providerCityId ?? city.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_/, '');
+  const providerId = city.providerCityId;
 
   await prisma.city.upsert({
     where: {
@@ -148,14 +148,16 @@ async function upsertCity(city: ProviderCity): Promise<void> {
     update: {
       name: city.name,
       province: city.province ?? 'Unknown',
+      providerCode: city.providerCode,
+      providerId,
     },
   });
 }
 
 async function upsertOutlet(outlet: ProviderOutlet): Promise<void> {
   // Extract provider IDs - handle both formats: TIKETUX_123 and tiketux_outlet_123
-  const providerId = outlet.providerOutletId ?? outlet.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_?(outlet_)?/i, '');
-  const providerCityId = outlet.cityId.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_?(city_)?/i, '');
+  const providerId = outlet.providerOutletId ?? outlet.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS|tiketux|traveloka|redbus)_?(outlet_)?/i, '');
+  const providerCityId = outlet.cityId.replace(/^(TIKETUX|TRAVELOKA|REDBUS|tiketux|traveloka|redbus)_?(city_)?/i, '');
 
   // Find or create the city first
   let city = await prisma.city.findFirst({
