@@ -126,8 +126,8 @@ async function syncOutletsFromProvider(providerCode: ProviderCode): Promise<{ sy
 }
 
 async function upsertCity(city: ProviderCity): Promise<void> {
-  // Extract provider ID from composite ID (e.g., "tiketux_city_123" -> "123")
-  const providerId = city.providerCityId ?? city.id.replace(/^(tiketux|traveloka|redbus)_city_/, '');
+  // Extract provider ID from composite ID (e.g., "tiketux_123" -> "123")
+  const providerId = city.providerCityId ?? city.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_/, '');
 
   await prisma.city.upsert({
     where: {
@@ -151,8 +151,8 @@ async function upsertCity(city: ProviderCity): Promise<void> {
 
 async function upsertOutlet(outlet: ProviderOutlet): Promise<void> {
   // Extract provider IDs - handle both formats: TIKETUX_123 and tiketux_outlet_123
-  const providerId = outlet.providerOutletId ?? outlet.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS|tiketux|traveloka|redbus)_?(outlet_)?/i, '');
-  const providerCityId = outlet.cityId.replace(/^(TIKETUX|TRAVELOKA|REDBUS|tiketux|traveloka|redbus)_?(city_)?/i, '');
+  const providerId = outlet.providerOutletId ?? outlet.id.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_?(outlet_)?/i, '');
+  const providerCityId = outlet.cityId.replace(/^(TIKETUX|TRAVELOKA|REDBUS)_?(city_)?/i, '');
 
   // Find or create the city first
   let city = await prisma.city.findFirst({
@@ -203,6 +203,50 @@ async function upsertOutlet(outlet: ProviderOutlet): Promise<void> {
 }
 
 // ─────────────────────────────────────────────
+// Cleanup Functions
+// ─────────────────────────────────────────────
+
+async function cleanupInvalidRecords(): Promise<{ citiesDeleted: number; outletsDeleted: number }> {
+  // First, find cities with invalid providerId
+  const invalidCities = await prisma.city.findMany({
+    where: {
+      OR: [
+        { providerId: 'undefined' },
+        { providerId: 'null' },
+        { providerId: '' },
+      ],
+    },
+    select: { id: true },
+  });
+
+  const invalidCityIds = invalidCities.map((c) => c.id);
+
+  // Delete counters that reference invalid cities OR have invalid providerId themselves
+  const outletsDeleted = await prisma.counter.deleteMany({
+    where: {
+      OR: [
+        { cityId: { in: invalidCityIds } },
+        { providerId: 'undefined' },
+        { providerId: 'null' },
+        { providerId: '' },
+      ],
+    },
+  });
+
+  // Now delete the invalid cities
+  const citiesDeleted = await prisma.city.deleteMany({
+    where: {
+      id: { in: invalidCityIds },
+    },
+  });
+
+  return {
+    citiesDeleted: citiesDeleted.count,
+    outletsDeleted: outletsDeleted.count,
+  };
+}
+
+// ─────────────────────────────────────────────
 // Job Processor
 // ─────────────────────────────────────────────
 
@@ -212,6 +256,13 @@ async function processSyncJob(job: Job<SyncJobData, SyncJobResult>): Promise<Syn
   console.log(`\n🔄 Starting provider sync job ${job.id}`);
   console.log(`   Provider: ${providerCode ?? 'ALL'}`);
   console.log(`   Sync cities: ${syncCities}, Sync outlets: ${syncOutlets}`);
+
+  // Cleanup invalid records first
+  console.log('🧹 Cleaning up invalid records...');
+  const cleanup = await cleanupInvalidRecords();
+  if (cleanup.citiesDeleted > 0 || cleanup.outletsDeleted > 0) {
+    console.log(`   Deleted ${cleanup.citiesDeleted} invalid cities, ${cleanup.outletsDeleted} invalid outlets`);
+  }
 
   const result: SyncJobResult = {
     citiesSynced: 0,

@@ -107,7 +107,7 @@ export class TiketuxProvider implements IShuttleProvider {
   private mapOutlet(outlet: TiketuxOutlet): ProviderOutlet {
     return {
       id: `TIKETUX_${outlet.id}`,
-      code: outlet.kode,
+      code: outlet.id,
       name: outlet.nama,
       cityId: `TIKETUX_${outlet.kode_kota}`,
       cityName: outlet.kota || outlet.nama_kota || outlet.kode_kota,
