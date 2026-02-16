@@ -109,11 +109,12 @@ export class TiketuxProvider implements IShuttleProvider {
       id: `TIKETUX_${outlet.id}`,
       code: outlet.kode,
       name: outlet.nama,
-      cityId: `TIKETUX_${outlet.id_kota}`,
-      cityName: outlet.nama_kota,
+      cityId: `TIKETUX_${outlet.kode_kota}`,
+      cityName: outlet.kota || outlet.nama_kota || outlet.kode_kota,
       address: outlet.alamat,
       ...(outlet.latitude && { latitude: parseFloat(outlet.latitude) }),
       ...(outlet.longitude && { longitude: parseFloat(outlet.longitude) }),
+      ...(outlet.telpon && { phone: outlet.telpon }),
       providerCode: ProviderCode.TIKETUX,
       providerOutletId: outlet.id,
     };
@@ -168,30 +169,29 @@ export class TiketuxProvider implements IShuttleProvider {
         providerCode: ProviderCode.TIKETUX,
         providerScheduleId: schedule.id_produk,
         origin: {
-          address: schedule.alamat_outlet_pickup,
-          id: params.originOutletId,
+          id: params.originOutletId ?? `TIKETUX_${schedule.id_outlet_pickup}`,
           code: schedule.id_outlet_pickup,
           name: schedule.nama_outlet_pickup,
-          cityId: schedule.id_outlet_pickup,
+          cityId: `TIKETUX_${schedule.id_outlet_pickup}`,
           cityName: schedule.nama_outlet_pickup,
-          providerCode: params.originOutletId,
-          providerOutletId: originId,
+          address: schedule.alamat_outlet_pickup,
+          providerCode: ProviderCode.TIKETUX,
+          providerOutletId: schedule.id_outlet_pickup,
         },
         destination: {
-          address: schedule.alamat_outlet_dropoff,
-          id: params.destinationOutletId,
+          id: params.destinationOutletId ?? `TIKETUX_${schedule.id_outlet_dropoff}`,
           code: schedule.id_outlet_dropoff,
           name: schedule.nama_outlet_dropoff,
-          cityId: schedule.id_outlet_dropoff,
+          cityId: `TIKETUX_${schedule.id_outlet_dropoff}`,
           cityName: schedule.nama_outlet_dropoff,
-          providerCode: params.destinationOutletId,
-          providerOutletId: destId,
+          address: schedule.alamat_outlet_dropoff,
+          providerCode: ProviderCode.TIKETUX,
+          providerOutletId: schedule.id_outlet_dropoff,
         },
         departureTime: departureDate,
         ...(arrivalTime && { arrivalTime }),
         vehicleType: schedule.tipe_kendaraan,
-        ...(schedule.nama_kendaraan && { vehicleName: schedule.nama_kendaraan }),
-        ...(schedule.layanan && { serviceClass: schedule.layanan }),
+        serviceClass: schedule.nama_layanan,
         availableSeats: schedule.sisa_kursi,
         totalSeats: schedule.jumlah_kursi,
         basePrice: schedule.max_tarif ?? schedule.tarif,
@@ -498,8 +498,8 @@ export class TiketuxProvider implements IShuttleProvider {
   // ─────────────────────────────────────────────
 
   private parseTiketuxDate(dateStr: string): Date {
-    // Format: DD-MM-YYYY
-    const [day, month, year] = dateStr.split('-').map(Number);
+    // Format: YYYY-MM-DD
+    const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year ?? 2024, (month ?? 1) - 1, day ?? 1);
   }
 

@@ -49,21 +49,8 @@ export interface TiketuxOutlet {
 
 export interface TiketuxSchedule {
   id_produk: string;
-  tgl_berangkat: string;
-  jam_berangkat: string;
-  tgl_sampai: string;
-  jam_sampai?: string;
-  tipe_kendaraan: string;
-  nama_kendaraan?: string;
-  layanan?: string;
-  kursi_terisi: number;
-  sisa_kursi: number;
-  jumlah_kursi: number;
-  tarif: number;
-  min_tarif?: number;
-  max_tarif?: number;
-  promo?: string[];
-  list_fasilitas?: string[];
+  kode_produk: string;
+  rute: string;
   id_outlet_pickup: string;
   nama_outlet_pickup: string;
   alamat_outlet_pickup: string;
@@ -72,7 +59,116 @@ export interface TiketuxSchedule {
   nama_outlet_dropoff: string;
   alamat_outlet_dropoff: string;
   maps_outlet_dropoff: string;
+  Via: string | null;
+  estimasi_waktu_tempuh: number;
   estimasi_waktu_tempuh_menit: number;
+  estimasi_waktu_tempuh_str: string;
+  tgl_berangkat: string;
+  tgl_berangkat_induk: string;
+  jam_berangkat: string;
+  tgl_sampai: string;
+  jam_sampai: string;
+  max_waktu_book: string;
+  id_layanan: string;
+  nama_layanan: string;
+  tipe_kendaraan: string;
+  tarif: number;
+  range_tarif: string;
+  min_tarif: number;
+  max_tarif: number;
+  range_tarif_disc: string;
+  min_tarif_disc: number;
+  max_tarif_disc: number;
+  promo: string[];
+  jumlah_kursi: number;
+  sisa_kursi: number;
+  kursi_terisi: number;
+  keterangan: string;
+  is_jadwal_dioperasikan: string;
+  is_jadwal_lewat: number;
+  show_btn_wa: number;
+  is_waktu_verify: number;
+  is_waktu_verify_maskapai: number;
+  is_pilih_kursi: number;
+  show_area_antar_jemput: number;
+  is_transit: number;
+  list_transit?: TiketuxScheduleListTransit[];
+  is_connecting: number;
+  list_connecting?: TiketuxScheduleListConnecting[];
+  list_transit_connecting?: TiketuxScheduleListTransitConnecting[];
+  harga_pengguna_baru?: TiketuxScheduleHargaPenggunaBaru;
+  potongan_pengguna_baru?: TiketuxSchedulePotonganPenggunaBaru;
+  poin_didapat: number;
+  daftar_layanan: string[];
+  daftar_layanan_connecting?: Record<string, string>;
+  list_fasilitas: string[];
+  is_mutasi: number;
+  show_flexi_mutasi: number;
+  is_flexi_mutasi: number;
+  biaya_addon_mutasi: number;
+  data_flexi_mutasi?: TiketuxScheduleDataFlexiMutasi;
+  cashback?: string[];
+}
+
+export interface TiketuxScheduleListTransit {
+  nama: string;
+  ewt_menit: number;
+  jam: string;
+}
+
+export interface TiketuxScheduleListConnecting {
+  tgl_berangkat: string;
+  jam_berangkat: string;
+  id_produk: string;
+  kode_produk: string;
+  id_outlet_pickup: string;
+  nama_outlet_pickup: string;
+  kota_outlet_pickup: string;
+  id_outlet_dropoff: string;
+  nama_outlet_dropoff: string;
+  kota_outlet_dropoff: string;
+  ewt_connecting: number;
+  tarif: number;
+  min_tarif: number;
+  max_tarif: number;
+  waktu_tunggu: number;
+  tgl_sampai: string;
+  jam_sampai: string;
+}
+
+export interface TiketuxScheduleListTransitConnecting {
+  tgl_berangkat: string;
+  jam_berangkat: string;
+  id_produk: string;
+  kode_produk: string;
+  id_outlet_pickup: string;
+  nama_outlet_pickup: string;
+  alamat_outlet_pickup: string;
+  maps_outlet_pickup: string;
+  id_outlet_dropoff: string;
+  nama_outlet_dropoff: string;
+  alamat_outlet_dropoff: string;
+  ewt_connecting: number;
+  waktu_tunggu: number;
+  jenis_titik: string;
+}
+
+export interface TiketuxScheduleHargaPenggunaBaru {
+  web: number;
+  android: number;
+  ios: number;
+}
+
+export interface TiketuxSchedulePotonganPenggunaBaru {
+  web: number;
+  android: number;
+  ios: number;
+}
+
+export interface TiketuxScheduleDataFlexiMutasi {
+  is_wajib_flexi: number;
+  biaya_flexi: number;
+  max_waktu_mutasi: number;
 }
 
 export interface TiketuxScheduleResponse {
