@@ -149,6 +149,11 @@ export class TiketuxClient {
 
     const result = (await response.json()) as TiketuxResponse<T>;
 
+    // Debug logging
+    if (process.env['DEBUG']) {
+      console.log(`[Tiketux] Response for ${endpoint}:`, JSON.stringify(result, null, 2).substring(0, 500));
+    }
+
     if (result.tiketux.status !== 'OK') {
       throw new AppError(
         result.tiketux.pesan ?? 'Unknown Tiketux error',

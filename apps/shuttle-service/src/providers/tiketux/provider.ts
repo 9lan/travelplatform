@@ -68,14 +68,15 @@ export class TiketuxProvider implements IShuttleProvider {
   // ─────────────────────────────────────────────
 
   async getCities(): Promise<ProviderCity[]> {
-    const cities = await this.client.post<TiketuxCity[]>('kota');
+    const response = await this.client.post<{ kota: TiketuxCity[] }>('kota');
+    const cities = response?.kota ?? [];
 
     return cities.map((city) => ({
-      id: `tiketux_city_${city.id_kota}`,
+      id: `TIKETUX_${city.kode_kota}`,
       name: city.nama_kota,
       ...(city.provinsi && { province: city.provinsi }),
       providerCode: ProviderCode.TIKETUX,
-      providerCityId: city.id_kota,
+      providerCityId: city.kode_kota,
     }));
   }
 
@@ -83,17 +84,18 @@ export class TiketuxProvider implements IShuttleProvider {
     const params: Record<string, string | undefined> = {};
     if (cityId) {
       // Extract Tiketux city ID if prefixed
-      const tiketuxCityId = cityId.replace('tiketux_city_', '');
+      const tiketuxCityId = cityId.replace('TIKETUX_', '');
       params['kota'] = tiketuxCityId;
     }
 
-    const outlets = await this.client.post<TiketuxOutlet[]>('outletasal', params);
+    const response = await this.client.post<{ outlet: TiketuxOutlet[]; kota: TiketuxCity[]; outlet_terdekat: TiketuxOutlet[] }>('outletasal', params);
+    const outlets = response?.outlet ?? [];
 
     return outlets.map((outlet) => this.mapOutlet(outlet));
   }
 
   async getDestinationOutlets(originOutletId: string): Promise<ProviderOutlet[]> {
-    const tiketuxOutletId = originOutletId.replace('tiketux_outlet_', '');
+    const tiketuxOutletId = originOutletId.replace('TIKETUX_', '');
 
     const outlets = await this.client.post<TiketuxOutlet[]>('outlettujuan', {
       outletasal: tiketuxOutletId,
@@ -104,16 +106,16 @@ export class TiketuxProvider implements IShuttleProvider {
 
   private mapOutlet(outlet: TiketuxOutlet): ProviderOutlet {
     return {
-      id: `tiketux_outlet_${outlet.id_outlet}`,
-      code: outlet.kode_outlet,
-      name: outlet.nama_outlet,
-      cityId: `tiketux_city_${outlet.id_kota}`,
+      id: `TIKETUX_${outlet.id}`,
+      code: outlet.kode,
+      name: outlet.nama,
+      cityId: `TIKETUX_${outlet.id_kota}`,
       cityName: outlet.nama_kota,
       address: outlet.alamat,
       ...(outlet.latitude && { latitude: parseFloat(outlet.latitude) }),
       ...(outlet.longitude && { longitude: parseFloat(outlet.longitude) }),
       providerCode: ProviderCode.TIKETUX,
-      providerOutletId: outlet.id_outlet,
+      providerOutletId: outlet.id,
     };
   }
 
@@ -122,22 +124,28 @@ export class TiketuxProvider implements IShuttleProvider {
   // ─────────────────────────────────────────────
 
   async searchSchedules(params: SearchScheduleParams): Promise<ProviderSchedule[]> {
-    const originId = params.originOutletId?.replace('tiketux_outlet_', '') ?? '';
-    const destId = params.destinationOutletId?.replace('tiketux_outlet_', '') ?? '';
+    // Parse date from YYYY-MM-DD format
+    const dateParts = params.departureDate.split('-');
+    const day = dateParts[2];
+    const month = dateParts[1]
+    const year = dateParts[0]
+    
+    const originId = params.originOutletId?.replace('TIKETUX_', '') ?? '';
+    const destId = params.destinationOutletId?.replace('TIKETUX_', '') ?? '';
 
-    const response = await this.client.post<TiketuxScheduleResponse>('keberangkatan', {
-      tglberangkat: params.departureDate,
+    const response = await this.client.post<TiketuxScheduleResponse>('keberangkatanoptimize', {
+      tglberangkat: `${day}-${month}-${year}`,
       outletasal: originId,
       outlettujuan: destId,
       jumlahpenumpang: params.passengerCount?.toString(),
       ispp: params.isRoundTrip ? '1' : '0',
-      tglberangkatpp: params.returnDate,
+      ...(params.returnDate && {tglberangkatpp: params.returnDate})
     });
 
-    const origin = this.mapOutlet(response.outletasal);
-    const destination = this.mapOutlet(response.outlettujuan);
+    // const origin = this.mapOutlet(response.outletasal);
+    // const destination = this.mapOutlet(response.outlettujuan);
 
-    return response.keberangkatan.map((schedule) => {
+    return response.produk.map((schedule) => {
       // Parse departure time
       const [hours, minutes] = schedule.jam_berangkat.split(':').map(Number);
       const departureDate = this.parseTiketuxDate(params.departureDate);
@@ -145,8 +153,8 @@ export class TiketuxProvider implements IShuttleProvider {
 
       // Parse arrival time if available
       let arrivalTime: Date | null = null;
-      if (schedule.jam_tiba) {
-        const [arrHours, arrMinutes] = schedule.jam_tiba.split(':').map(Number);
+      if (schedule.jam_sampai) {
+        const [arrHours, arrMinutes] = schedule.jam_sampai.split(':').map(Number);
         arrivalTime = new Date(departureDate);
         arrivalTime.setHours(arrHours ?? 0, arrMinutes ?? 0, 0, 0);
         // If arrival is before departure, it's next day
@@ -159,18 +167,37 @@ export class TiketuxProvider implements IShuttleProvider {
         id: `tiketux_schedule_${schedule.id_produk}`,
         providerCode: ProviderCode.TIKETUX,
         providerScheduleId: schedule.id_produk,
-        origin,
-        destination,
+        origin: {
+          address: schedule.alamat_outlet_pickup,
+          id: params.originOutletId,
+          code: schedule.id_outlet_pickup,
+          name: schedule.nama_outlet_pickup,
+          cityId: schedule.id_outlet_pickup,
+          cityName: schedule.nama_outlet_pickup,
+          providerCode: params.originOutletId,
+          providerOutletId: originId,
+        },
+        destination: {
+          address: schedule.alamat_outlet_dropoff,
+          id: params.destinationOutletId,
+          code: schedule.id_outlet_dropoff,
+          name: schedule.nama_outlet_dropoff,
+          cityId: schedule.id_outlet_dropoff,
+          cityName: schedule.nama_outlet_dropoff,
+          providerCode: params.destinationOutletId,
+          providerOutletId: destId,
+        },
         departureTime: departureDate,
         ...(arrivalTime && { arrivalTime }),
         vehicleType: schedule.tipe_kendaraan,
         ...(schedule.nama_kendaraan && { vehicleName: schedule.nama_kendaraan }),
         ...(schedule.layanan && { serviceClass: schedule.layanan }),
         availableSeats: schedule.sisa_kursi,
-        totalSeats: schedule.kapasitas,
-        basePrice: schedule.harga_promo ?? schedule.harga,
+        totalSeats: schedule.jumlah_kursi,
+        basePrice: schedule.max_tarif ?? schedule.tarif,
+        promoPrice: schedule.min_tarif,
         currency: 'IDR',
-        ...(schedule.fasilitas && { amenities: schedule.fasilitas }),
+        ...(schedule.list_fasilitas && { amenities: schedule.list_fasilitas }),
       };
     });
   }
@@ -182,8 +209,8 @@ export class TiketuxProvider implements IShuttleProvider {
     destinationOutletId: string
   ): Promise<ProviderSeatLayout> {
     const productId = scheduleId.replace('tiketux_schedule_', '');
-    const originId = originOutletId.replace('tiketux_outlet_', '');
-    const destId = destinationOutletId.replace('tiketux_outlet_', '');
+    const originId = originOutletId.replace('TIKETUX_', '');
+    const destId = destinationOutletId.replace('TIKETUX_', '');
 
     const response = await this.client.post<TiketuxSeatResponse>('kursi', {
       idproduk: productId,
@@ -257,8 +284,8 @@ export class TiketuxProvider implements IShuttleProvider {
 
   async checkSeatAvailability(params: CheckSeatAvailabilityParams): Promise<boolean> {
     const productId = params.scheduleId.replace('tiketux_schedule_', '');
-    const originId = params.originOutletId.replace('tiketux_outlet_', '');
-    const destId = params.destinationOutletId.replace('tiketux_outlet_', '');
+    const originId = params.originOutletId.replace('TIKETUX_', '');
+    const destId = params.destinationOutletId.replace('TIKETUX_', '');
 
     try {
       await this.client.post('cek_ketersediaan_kursi', {
@@ -280,8 +307,8 @@ export class TiketuxProvider implements IShuttleProvider {
 
   async calculatePrice(params: CalculatePriceParams): Promise<ProviderPriceBreakdown> {
     const productId = params.scheduleId.replace('tiketux_schedule_', '');
-    const originId = params.originOutletId.replace('tiketux_outlet_', '');
-    const destId = params.destinationOutletId.replace('tiketux_outlet_', '');
+    const originId = params.originOutletId.replace('TIKETUX_', '');
+    const destId = params.destinationOutletId.replace('TIKETUX_', '');
 
     const requestBody = {
       telp_pemesan: params.bookerPhone ?? '',
@@ -329,8 +356,8 @@ export class TiketuxProvider implements IShuttleProvider {
 
   async createBooking(request: ProviderBookingRequest): Promise<ProviderBooking> {
     const productId = request.scheduleId.replace('tiketux_schedule_', '');
-    const originId = request.originOutletId.replace('tiketux_outlet_', '');
-    const destId = request.destinationOutletId.replace('tiketux_outlet_', '');
+    const originId = request.originOutletId.replace('TIKETUX_', '');
+    const destId = request.destinationOutletId.replace('TIKETUX_', '');
 
     const passengerNames = request.passengers.map((p) => p.name).join(',');
     const seatNumbers = request.passengers.map((p) => p.seatNumber).join(',');

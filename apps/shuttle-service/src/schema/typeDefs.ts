@@ -205,14 +205,14 @@ export const typeDefs = gql`
     id: String!
     departureTime: DateTime!
     arrivalTime: DateTime
-    vehicleType: String!
+    vehicleType: String
     vehicleName: String
     serviceName: String
     availableSeats: Int!
     totalSeats: Int!
     basePrice: Float!
     promoPrice: Float
-    isPromo: Boolean!
+    isPromo: Boolean
     amenities: [String!]!
     origin: ProviderOutlet!
     destination: ProviderOutlet!

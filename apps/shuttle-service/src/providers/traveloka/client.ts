@@ -56,6 +56,11 @@ export class TravelokaClient {
 
     const data = (await response.json()) as TravelokaOAuthResponse;
 
+    // Debug logging
+    if (process.env['DEBUG']) {
+      console.log('[Traveloka] Auth response:', JSON.stringify(data, null, 2));
+    }
+
     if (!data.access_token) {
       throw new AppError(
         'Traveloka authentication failed: No access token received',
@@ -64,8 +69,13 @@ export class TravelokaClient {
       );
     }
 
-    this.accessToken = `${data.token_type} ${data.access_token}`;
+    // Store raw token (Traveloka API doesn't use Bearer prefix)
+    this.accessToken = data.access_token;
     this.tokenExpiresAt = new Date(Date.now() + data.expires_in * 1000);
+
+    if (process.env['DEBUG']) {
+      console.log(`[Traveloka] Token stored: ${this.accessToken.substring(0, 30)}...`);
+    }
   }
 
   isAuthenticated(): boolean {
@@ -87,6 +97,12 @@ export class TravelokaClient {
 
     const url = `${this.config.apiUrl}/bus/${endpoint}`;
 
+    // Debug logging
+    if (process.env['DEBUG']) {
+      console.log(`[Traveloka] POST ${url}`);
+      console.log(`[Traveloka] Authorization: ${this.accessToken?.substring(0, 30)}...`);
+    }
+
     const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
@@ -103,8 +119,19 @@ export class TravelokaClient {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
+      // Try to get error details
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+        if (process.env['DEBUG']) {
+          console.log(`[Traveloka] Error response: ${errorBody}`);
+        }
+      } catch {
+        // Ignore
+      }
+
       throw new AppError(
-        `Traveloka API error: ${response.status}`,
+        `Traveloka API error: ${response.status} - ${errorBody.substring(0, 200)}`,
         'TRAVELOKA_API_ERROR',
         response.status
       );

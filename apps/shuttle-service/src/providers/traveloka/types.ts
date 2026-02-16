@@ -55,7 +55,7 @@ export interface TravelokaGeoPoint {
 export interface TravelokaCitiesResponse {
   responseStatus: string;
   responseMessage: string | null;
-  cities: TravelokaCity[];
+  cityDetails: TravelokaCity[];
   hasNextPage: boolean;
 }
 
@@ -68,7 +68,7 @@ export interface TravelokaCity {
 export interface TravelokaRoutePointsResponse {
   responseStatus: string;
   responseMessage: string | null;
-  routePoints: TravelokaRoutePoint[];
+  routePointDetails: TravelokaRoutePoint[];
   hasNextPage: boolean;
 }
 
@@ -154,7 +154,7 @@ export interface TravelokaInventory {
   seatLayout: string;
   seatClass: string;
   seatSubClass: string;
-  busType: string;
+  busType: string | null;
   fleetName?: string;
   busTripCode: string;
   requiresPassengerIds: boolean;

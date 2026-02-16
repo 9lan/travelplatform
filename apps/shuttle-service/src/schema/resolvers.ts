@@ -197,6 +197,7 @@ export const resolvers = {
         if (!provider) {
           throw new NotFoundError('Provider', input.providerCode);
         }
+        console.log("🚀 ~ params:", params);
         return provider.searchSchedules(params);
       }
 

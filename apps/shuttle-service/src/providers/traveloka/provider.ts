@@ -80,9 +80,9 @@ export class TravelokaProvider implements IShuttleProvider {
     while (hasNextPage) {
       const response = await this.client.post<TravelokaCitiesResponse>('get-cities', { page });
 
-      if (response.cities) {
-        const cities = response.cities.map((city) => ({
-          id: `traveloka_city_${city.cityCode}`,
+      if (response.cityDetails) {
+        const cities = response.cityDetails.map((city) => ({
+          id: `TRAVELOKA_${city.cityCode}`,
           name: city.cityName,
           providerCode: ProviderCode.TRAVELOKA,
           providerCityId: city.cityCode,
@@ -109,11 +109,11 @@ export class TravelokaProvider implements IShuttleProvider {
     while (hasNextPage) {
       const response = await this.client.post<TravelokaRoutePointsResponse>('get-route-points', { page });
 
-      if (response.routePoints) {
-        const outlets = response.routePoints
+      if (response.routePointDetails) {
+        const outlets = response.routePointDetails
           .filter((point) => {
             if (!cityId) return true;
-            const travelokaCityCode = cityId.replace('traveloka_city_', '');
+            const travelokaCityCode = cityId.replace('TRAVELOKA_', '');
             return point.cityCode === travelokaCityCode;
           })
           .map((point) => this.mapRoutePointToOutlet(point));
@@ -130,7 +130,7 @@ export class TravelokaProvider implements IShuttleProvider {
   }
 
   async getDestinationOutlets(originOutletId: string): Promise<ProviderOutlet[]> {
-    const originPointCode = originOutletId.replace('traveloka_outlet_', '');
+    const originPointCode = originOutletId.replace('TRAVELOKA_', '');
 
     const response = await this.client.post<TravelokaDestinationPointsResponse>('get-destination-points', {
       originPointCode,
@@ -151,10 +151,10 @@ export class TravelokaProvider implements IShuttleProvider {
     geoPoint?: { latitude?: string | number | null; longitude?: string | number | null } | null;
   }): ProviderOutlet {
     return {
-      id: `traveloka_outlet_${point.pointCode}`,
+      id: `TRAVELOKA_${point.pointCode}`,
       code: point.pointCode,
       name: point.pointName,
-      cityId: `traveloka_city_${point.cityCode}`,
+      cityId: `TRAVELOKA_${point.cityCode}`,
       cityName: point.cityName,
       address: point.pointName, // Traveloka doesn't provide separate address
       ...(point.geoPoint?.latitude && { latitude: parseFloat(String(point.geoPoint.latitude)) }),
@@ -169,18 +169,18 @@ export class TravelokaProvider implements IShuttleProvider {
   // ─────────────────────────────────────────────
 
   async searchSchedules(params: SearchScheduleParams): Promise<ProviderSchedule[]> {
-    // Parse date from DD-MM-YYYY format
+    // Parse date from YYYY-MM-DD format
     const dateParts = params.departureDate.split('-');
-    const day = parseInt(dateParts[0] ?? '1', 10);
+    const day = parseInt(dateParts[2] ?? '1', 10);
     const month = parseInt(dateParts[1] ?? '1', 10);
-    const year = parseInt(dateParts[2] ?? '2024', 10);
+    const year = parseInt(dateParts[0] ?? '2024', 10);
 
     // Get origin/destination codes
-    const originCode = params.originOutletId?.replace('traveloka_outlet_', '')
-      ?? params.originCityId?.replace('traveloka_city_', '')
+    const originCode = params.originOutletId?.replace('TRAVELOKA_', '')
+      ?? params.originCityId?.replace('TRAVELOKA_', '')
       ?? '';
-    const destinationCode = params.destinationOutletId?.replace('traveloka_outlet_', '')
-      ?? params.destinationCityId?.replace('traveloka_city_', '')
+    const destinationCode = params.destinationOutletId?.replace('TRAVELOKA_', '')
+      ?? params.destinationCityId?.replace('TRAVELOKA_', '')
       ?? '';
 
     const response = await this.client.post<TravelokaScheduleResponse>('get-inventories', {
@@ -216,7 +216,7 @@ export class TravelokaProvider implements IShuttleProvider {
       destination,
       departureTime,
       ...(arrivalTime && { arrivalTime }),
-      vehicleType: inventory.busType,
+      ...(inventory.busType && { vehicleType: inventory.busType }),
       ...(inventory.fleetName && { vehicleName: inventory.fleetName }),
       ...(inventory.seatClass && { serviceClass: inventory.seatClass }),
       availableSeats: parseInt(String(inventory.numOfSeatsAvailable), 10),
@@ -237,10 +237,10 @@ export class TravelokaProvider implements IShuttleProvider {
 
   private mapPointDetailToOutlet(point: TravelokaPointDetail): ProviderOutlet {
     return {
-      id: `traveloka_outlet_${point.pointCode}`,
+      id: `TRAVELOKA_${point.pointCode}`,
       code: point.pointCode,
       name: point.pointName,
-      cityId: `traveloka_city_${point.cityCode}`,
+      cityId: `TRAVELOKA_${point.cityCode}`,
       cityName: point.cityName,
       address: point.pointName,
       ...(point.geoPoint?.latitude && { latitude: parseFloat(String(point.geoPoint.latitude)) }),
@@ -261,8 +261,8 @@ export class TravelokaProvider implements IShuttleProvider {
     const routeId = idParts[0] ?? '';
     const skuId = idParts[1] ?? '';
 
-    const pickUpPointCode = originOutletId.replace('traveloka_outlet_', '');
-    const dropOffPointCode = destinationOutletId.replace('traveloka_outlet_', '');
+    const pickUpPointCode = originOutletId.replace('TRAVELOKA_', '');
+    const dropOffPointCode = destinationOutletId.replace('TRAVELOKA_', '');
 
     // Parse date
     const dateParts = departureDate.split('-');
@@ -436,8 +436,8 @@ export class TravelokaProvider implements IShuttleProvider {
     const routeId = idParts[0] ?? '';
     const skuId = idParts[1] ?? '';
 
-    const pickUpPointCode = request.originOutletId.replace('traveloka_outlet_', '');
-    const dropOffPointCode = request.destinationOutletId.replace('traveloka_outlet_', '');
+    const pickUpPointCode = request.originOutletId.replace('TRAVELOKA_', '');
+    const dropOffPointCode = request.destinationOutletId.replace('TRAVELOKA_', '');
 
     // Split booker name
     const nameParts = request.bookerName.split(' ');

@@ -10,6 +10,7 @@
 
 export interface TiketuxCity {
   id_kota: string;
+  kode_kota: string;
   nama_kota: string;
   provinsi?: string;
 }
@@ -19,15 +20,27 @@ export interface TiketuxCity {
 // ─────────────────────────────────────────────
 
 export interface TiketuxOutlet {
-  id_outlet: string;
-  kode_outlet: string;
-  nama_outlet: string;
+  id: string;
+  group: string;
+  kode: string;
+  nama: string;
   id_kota: string;
   nama_kota: string;
   alamat: string;
   latitude?: string;
   longitude?: string;
-  telp?: string;
+  telpon?: string;
+  kode_kota: string;
+  kota: string;
+  flag_bandara: number; // boolean 0 | 1
+  flag_agen: number; // boolean 0 | 1
+  flag_aktif: number; // boolean 0 | 1
+  flag_virtual_outlet: number; // boolean 0 | 1
+  img: string;
+  url_map: string;
+  list_img: string[];
+  tag: string;
+  jarak: number;
 }
 
 // ─────────────────────────────────────────────
@@ -36,24 +49,34 @@ export interface TiketuxOutlet {
 
 export interface TiketuxSchedule {
   id_produk: string;
+  tgl_berangkat: string;
   jam_berangkat: string;
-  jam_tiba?: string;
+  tgl_sampai: string;
+  jam_sampai?: string;
   tipe_kendaraan: string;
   nama_kendaraan?: string;
   layanan?: string;
+  kursi_terisi: number;
   sisa_kursi: number;
-  kapasitas: number;
-  harga: number;
-  harga_promo?: number;
-  is_promo?: boolean;
-  fasilitas?: string[];
+  jumlah_kursi: number;
+  tarif: number;
+  min_tarif?: number;
+  max_tarif?: number;
+  promo?: string[];
+  list_fasilitas?: string[];
+  id_outlet_pickup: string;
+  nama_outlet_pickup: string;
+  alamat_outlet_pickup: string;
+  maps_outlet_pickup: string;
+  id_outlet_dropoff: string;
+  nama_outlet_dropoff: string;
+  alamat_outlet_dropoff: string;
+  maps_outlet_dropoff: string;
+  estimasi_waktu_tempuh_menit: number;
 }
 
 export interface TiketuxScheduleResponse {
-  tanggal: string;
-  outletasal: TiketuxOutlet;
-  outlettujuan: TiketuxOutlet;
-  keberangkatan: TiketuxSchedule[];
+  produk: TiketuxSchedule[];
 }
 
 // ─────────────────────────────────────────────

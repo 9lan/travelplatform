@@ -16,7 +16,8 @@
     "db:studio": "prisma studio",
     "sync": "tsx --env-file .env src/cli/sync.ts",
     "sync:cities": "tsx --env-file .env src/cli/sync.ts --cities",
-    "sync:outlets": "tsx --env-file .env src/cli/sync.ts --outlets"
+    "sync:outlets": "tsx --env-file .env src/cli/sync.ts --outlets",
+    "debug:providers": "tsx --env-file .env src/cli/debug-providers.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
