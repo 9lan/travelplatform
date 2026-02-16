@@ -17,13 +17,18 @@ import {
   type CalculatePriceParams,
   ProviderCode,
 } from './types.js';
-
 import { TiketuxProvider } from './tiketux/provider.js';
+import { TravelokaProvider } from './traveloka/provider.js';
 
 export interface ProviderConfig {
   code: ProviderCode;
   enabled: boolean;
-  baseUrl: string;
+  // Tiketux / RedBus style (single base URL)
+  baseUrl?: string;
+  // Traveloka style (separate auth and API URLs)
+  authUrl?: string;
+  apiUrl?: string;
+  // Common
   clientId: string;
   clientSecret: string;
   timeout?: number;
@@ -46,6 +51,10 @@ export class ProviderRegistry {
   private createProvider(config: ProviderConfig): IShuttleProvider | null {
     switch (config.code) {
       case ProviderCode.TIKETUX:
+        if (!config.baseUrl) {
+          console.warn('Tiketux provider missing baseUrl');
+          return null;
+        }
         return new TiketuxProvider({
           baseUrl: config.baseUrl,
           clientId: config.clientId,
@@ -54,9 +63,17 @@ export class ProviderRegistry {
         });
 
       case ProviderCode.TRAVELOKA:
-        // TODO: Implement TravelokaProvider
-        console.warn('Traveloka provider not yet implemented');
-        return null;
+        if (!config.authUrl || !config.apiUrl) {
+          console.warn('Traveloka provider missing authUrl or apiUrl');
+          return null;
+        }
+        return new TravelokaProvider({
+          authUrl: config.authUrl,
+          apiUrl: config.apiUrl,
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          ...(config.timeout !== undefined && { timeout: config.timeout }),
+        });
 
       case ProviderCode.REDBUS:
         // TODO: Implement RedbusProvider
@@ -242,11 +259,12 @@ export function getProviderRegistry(): ProviderRegistry {
       },
       {
         code: ProviderCode.TRAVELOKA,
-        enabled: !!process.env['TRAVELOKA_BASE_URL'],
-        baseUrl: process.env['TRAVELOKA_BASE_URL'] ?? '',
+        enabled: !!(process.env['TRAVELOKA_AUTH_URL'] && process.env['TRAVELOKA_API_URL']),
+        authUrl: process.env['TRAVELOKA_AUTH_URL'] ?? '',
+        apiUrl: process.env['TRAVELOKA_API_URL'] ?? '',
         clientId: process.env['TRAVELOKA_CLIENT_ID'] ?? '',
         clientSecret: process.env['TRAVELOKA_CLIENT_SECRET'] ?? '',
-        timeout: 30000,
+        timeout: 60000, // Traveloka API can be slow
       },
       {
         code: ProviderCode.REDBUS,
