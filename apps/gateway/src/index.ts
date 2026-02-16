@@ -92,7 +92,8 @@ async function main() {
     cors<cors.CorsRequest>(),
     express.json(),
     expressMiddleware(server, {
-      context: ({ req }: { req: JWTRequest }): GatewayContext => ({
+      // eslint-disable-next-line @typescript-eslint/require-await
+      context: async ({ req }: { req: JWTRequest }): Promise<GatewayContext> => ({
         user: req.auth ?? null,
         requestId: (req.headers['x-request-id'] as string) ?? crypto.randomUUID(),
       }),
