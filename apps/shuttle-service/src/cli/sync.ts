@@ -7,6 +7,7 @@
  *   pnpm sync --cities           # Sync only cities
  *   pnpm sync --outlets          # Sync only outlets
  *   pnpm sync --provider TIKETUX # Sync from specific provider
+ *   pnpm sync --clean            # Delete existing data before syncing (fresh sync)
  */
 
 import { initializeProviders } from '../providers/index.js';
@@ -17,8 +18,13 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   // Parse arguments
-  const syncCities = args.length === 0 || args.includes('--cities') || args.includes('-c');
-  const syncOutlets = args.length === 0 || args.includes('--outlets') || args.includes('-o');
+  const cleanBeforeSync = args.includes('--clean') || args.includes('--fresh');
+  const hasCitiesFlag = args.includes('--cities') || args.includes('-c');
+  const hasOutletsFlag = args.includes('--outlets') || args.includes('-o');
+
+  // If no specific flags, sync both cities and outlets
+  const syncCities = args.length === 0 || hasCitiesFlag || (!hasCitiesFlag && !hasOutletsFlag);
+  const syncOutlets = args.length === 0 || hasOutletsFlag || (!hasCitiesFlag && !hasOutletsFlag);
 
   let providerCode: ProviderCode | undefined;
   const providerIndex = args.findIndex((a) => a === '--provider' || a === '-p');
@@ -48,6 +54,7 @@ async function main(): Promise<void> {
   const jobData: SyncJobData = {
     syncCities,
     syncOutlets,
+    cleanBeforeSync,
   };
 
   if (providerCode) {
@@ -59,6 +66,7 @@ async function main(): Promise<void> {
   console.log(`   Provider: ${providerCode ?? 'ALL'}`);
   console.log(`   Sync Cities: ${syncCities}`);
   console.log(`   Sync Outlets: ${syncOutlets}`);
+  console.log(`   Clean Before Sync: ${cleanBeforeSync}`);
   console.log();
 
   try {
@@ -72,6 +80,11 @@ async function main(): Promise<void> {
     console.log('║           Sync Complete                ║');
     console.log('╚════════════════════════════════════════╝');
     console.log();
+    if (result.citiesDeleted > 0 || result.outletsDeleted > 0) {
+      console.log(`   Cities deleted:  ${result.citiesDeleted}`);
+      console.log(`   Outlets deleted: ${result.outletsDeleted}`);
+      console.log();
+    }
     console.log(`   Cities synced:  ${result.citiesSynced}`);
     console.log(`   Outlets synced: ${result.outletsSynced}`);
     console.log(`   Errors:         ${result.errors.length}`);

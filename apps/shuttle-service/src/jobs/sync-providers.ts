@@ -19,11 +19,14 @@ export interface SyncJobData {
   providerCode?: ProviderCode | undefined; // If specified, sync only this provider
   syncCities?: boolean | undefined;
   syncOutlets?: boolean | undefined;
+  cleanBeforeSync?: boolean | undefined; // If true, delete all existing data before syncing
 }
 
 export interface SyncJobResult {
   citiesSynced: number;
   outletsSynced: number;
+  citiesDeleted: number;
+  outletsDeleted: number;
   errors: string[];
 }
 
@@ -246,27 +249,57 @@ async function cleanupInvalidRecords(): Promise<{ citiesDeleted: number; outlets
   };
 }
 
+async function cleanProviderData(providerCodes: ProviderCode[]): Promise<{ citiesDeleted: number; outletsDeleted: number }> {
+  // Find all cities for these providers
+  const citiesToDelete = await prisma.city.findMany({
+    where: {
+      providerCode: { in: providerCodes },
+    },
+    select: { id: true },
+  });
+
+  const cityIds = citiesToDelete.map((c) => c.id);
+
+  // Delete counters first (FK constraint)
+  const outletsDeleted = await prisma.counter.deleteMany({
+    where: {
+      OR: [
+        { providerCode: { in: providerCodes } },
+        { cityId: { in: cityIds } },
+      ],
+    },
+  });
+
+  // Delete cities
+  const citiesDeleted = await prisma.city.deleteMany({
+    where: {
+      providerCode: { in: providerCodes },
+    },
+  });
+
+  return {
+    citiesDeleted: citiesDeleted.count,
+    outletsDeleted: outletsDeleted.count,
+  };
+}
+
 // ─────────────────────────────────────────────
 // Job Processor
 // ─────────────────────────────────────────────
 
 async function processSyncJob(job: Job<SyncJobData, SyncJobResult>): Promise<SyncJobResult> {
-  const { providerCode, syncCities = true, syncOutlets = true } = job.data;
+  const { providerCode, syncCities = true, syncOutlets = true, cleanBeforeSync = false } = job.data;
 
   console.log(`\n🔄 Starting provider sync job ${job.id}`);
   console.log(`   Provider: ${providerCode ?? 'ALL'}`);
   console.log(`   Sync cities: ${syncCities}, Sync outlets: ${syncOutlets}`);
-
-  // Cleanup invalid records first
-  console.log('🧹 Cleaning up invalid records...');
-  const cleanup = await cleanupInvalidRecords();
-  if (cleanup.citiesDeleted > 0 || cleanup.outletsDeleted > 0) {
-    console.log(`   Deleted ${cleanup.citiesDeleted} invalid cities, ${cleanup.outletsDeleted} invalid outlets`);
-  }
+  console.log(`   Clean before sync: ${cleanBeforeSync}`);
 
   const result: SyncJobResult = {
     citiesSynced: 0,
     outletsSynced: 0,
+    citiesDeleted: 0,
+    outletsDeleted: 0,
     errors: [],
   };
 
@@ -274,6 +307,24 @@ async function processSyncJob(job: Job<SyncJobData, SyncJobResult>): Promise<Syn
   const providerCodes = providerCode
     ? [providerCode]
     : registry.getEnabledProviderCodes();
+
+  // Clean existing data if requested
+  if (cleanBeforeSync) {
+    console.log('🗑️  Cleaning existing provider data...');
+    const cleanResult = await cleanProviderData(providerCodes);
+    result.citiesDeleted = cleanResult.citiesDeleted;
+    result.outletsDeleted = cleanResult.outletsDeleted;
+    console.log(`   Deleted ${cleanResult.citiesDeleted} cities, ${cleanResult.outletsDeleted} outlets`);
+  } else {
+    // Just cleanup invalid records
+    console.log('🧹 Cleaning up invalid records...');
+    const cleanup = await cleanupInvalidRecords();
+    if (cleanup.citiesDeleted > 0 || cleanup.outletsDeleted > 0) {
+      console.log(`   Deleted ${cleanup.citiesDeleted} invalid cities, ${cleanup.outletsDeleted} invalid outlets`);
+      result.citiesDeleted = cleanup.citiesDeleted;
+      result.outletsDeleted = cleanup.outletsDeleted;
+    }
+  }
 
   for (const code of providerCodes) {
     // Sync cities
