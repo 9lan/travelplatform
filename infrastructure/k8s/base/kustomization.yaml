@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: travelplatform
+
+resources:
+  # Namespace
+  - namespace.yaml
+
+  # ConfigMaps and Secrets
+  - configmaps/services-config.yaml
+  - secrets/secrets.yaml
+
+  # Deployments
+  - deployments/gateway.yaml
+  - deployments/shuttle-service.yaml
+  - deployments/seat-service.yaml
+  - deployments/pricing-service.yaml
+  - deployments/booking-service.yaml
+  - deployments/payment-service.yaml
+  - deployments/promo-service.yaml
+  - deployments/notification-service.yaml
+
+  # Services
+  - services/gateway-svc.yaml
+  - services/shuttle-service-svc.yaml
+  - services/seat-service-svc.yaml
+  - services/pricing-service-svc.yaml
+  - services/booking-service-svc.yaml
+  - services/payment-service-svc.yaml
+  - services/promo-service-svc.yaml
+  - services/notification-service-svc.yaml
+
+  # HPAs
+  - hpa/gateway-hpa.yaml
+  - hpa/shuttle-service-hpa.yaml
+  - hpa/booking-service-hpa.yaml
+
+  # Ingress
+  - ingress/ingress.yaml
+
+  # Network Policies
+  - network-policies/network-policy.yaml
+
+  # Database
+  - database/postgres-statefulsets.yaml
+  - database/redis-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: travelplatform

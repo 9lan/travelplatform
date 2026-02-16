@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - namespace.yaml
+  - prometheus/prometheus-config.yaml
+  - alertmanager/alertmanager-config.yaml
+  - alertmanager/alert-rules.yaml
+  - grafana/grafana-deployment.yaml
+
+configMapGenerator:
+  - name: grafana-dashboards
+    files:
+      - grafana/dashboards/services-dashboard.json
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: travelplatform-monitoring

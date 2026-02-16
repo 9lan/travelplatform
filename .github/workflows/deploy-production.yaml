@@ -1,0 +1,142 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image tag to deploy (commit SHA or "latest")'
+        required: true
+        default: 'latest'
+      confirm:
+        description: 'Type "DEPLOY" to confirm production deployment'
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Validate confirmation
+        id: check
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "::error::You must type 'DEPLOY' to confirm production deployment"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.proceed == 'true'
+    environment:
+      name: production
+      url: https://api.travelplatform.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Backup current deployment
+        run: |
+          kubectl -n travelplatform get deployments -o yaml > /tmp/backup-deployments.yaml
+          echo "Backup saved to /tmp/backup-deployments.yaml"
+
+      - name: Update image tags
+        run: |
+          cd infrastructure/k8s/overlays/production
+          VERSION="${{ github.event.inputs.version }}"
+          kustomize edit set image \
+            ghcr.io/travelplatform/gateway:${VERSION} \
+            ghcr.io/travelplatform/shuttle-service:${VERSION} \
+            ghcr.io/travelplatform/seat-service:${VERSION} \
+            ghcr.io/travelplatform/pricing-service:${VERSION} \
+            ghcr.io/travelplatform/booking-service:${VERSION} \
+            ghcr.io/travelplatform/payment-service:${VERSION} \
+            ghcr.io/travelplatform/promo-service:${VERSION} \
+            ghcr.io/travelplatform/notification-service:${VERSION}
+
+      - name: Deploy to production
+        run: |
+          kubectl apply -k infrastructure/k8s/overlays/production
+
+      - name: Wait for rollout
+        run: |
+          echo "Waiting for deployments to roll out..."
+          kubectl -n travelplatform rollout status deployment/gateway --timeout=600s
+          kubectl -n travelplatform rollout status deployment/shuttle-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/seat-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/pricing-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/booking-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/payment-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/promo-service --timeout=600s
+          kubectl -n travelplatform rollout status deployment/notification-service --timeout=600s
+
+      - name: Health check
+        run: |
+          sleep 60
+          GATEWAY_POD=$(kubectl -n travelplatform get pods -l app=gateway -o jsonpath='{.items[0].metadata.name}')
+          kubectl -n travelplatform exec $GATEWAY_POD -- wget -q -O- http://localhost:4000/health || exit 1
+          echo "Health check passed!"
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl -n travelplatform get deployments
+          echo ""
+          echo "=== Pod Status ==="
+          kubectl -n travelplatform get pods
+          echo ""
+          echo "=== Recent Events ==="
+          kubectl -n travelplatform get events --sort-by='.lastTimestamp' | tail -20
+
+      - name: Create deployment record
+        run: |
+          echo "Production deployment completed"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  rollback:
+    name: Rollback Instructions
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+    steps:
+      - name: Print rollback instructions
+        run: |
+          echo "::error::Production deployment failed!"
+          echo ""
+          echo "=== ROLLBACK INSTRUCTIONS ==="
+          echo ""
+          echo "Option 1: Automatic rollback (recommended)"
+          echo "  kubectl -n travelplatform rollout undo deployment/<service-name>"
+          echo ""
+          echo "Option 2: Deploy previous version"
+          echo "  Re-run this workflow with the previous working version tag"
+          echo ""
+          echo "Option 3: Manual restoration"
+          echo "  Apply the backup created at the start of deployment"
+          echo ""
+          echo "For immediate assistance, contact the on-call engineer."

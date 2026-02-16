@@ -1,0 +1,91 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: travelplatform-staging
+
+resources:
+  - ../../base
+
+nameSuffix: ""
+
+commonLabels:
+  environment: staging
+
+# Override namespace
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: travelplatform-staging
+    target:
+      kind: Namespace
+
+# Staging-specific configuration
+configMapGenerator:
+  - name: services-config
+    behavior: merge
+    literals:
+      - NODE_ENV=staging
+
+# Lower resources for staging
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+  - patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+    target:
+      kind: HorizontalPodAutoscaler
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "250m"
+    target:
+      kind: Deployment
+
+# Staging ingress host
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging-api.travelplatform.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: staging-api.travelplatform.com
+    target:
+      kind: Ingress
+
+images:
+  - name: ghcr.io/travelplatform/gateway
+    newTag: staging
+  - name: ghcr.io/travelplatform/shuttle-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/seat-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/pricing-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/booking-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/payment-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/promo-service
+    newTag: staging
+  - name: ghcr.io/travelplatform/notification-service
+    newTag: staging

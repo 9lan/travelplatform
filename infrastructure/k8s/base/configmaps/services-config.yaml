@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: services-config
+  namespace: travelplatform
+data:
+  NODE_ENV: "production"
+
+  # Service URLs for federation
+  GATEWAY_URL: "http://gateway:4000"
+  SHUTTLE_SERVICE_URL: "http://shuttle-service:4001/graphql"
+  SEAT_SERVICE_URL: "http://seat-service:4002/graphql"
+  PRICING_SERVICE_URL: "http://pricing-service:4003/graphql"
+  BOOKING_SERVICE_URL: "http://booking-service:4004/graphql"
+  PAYMENT_SERVICE_URL: "http://payment-service:4005/graphql"
+  PROMO_SERVICE_URL: "http://promo-service:4006/graphql"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:4007/graphql"
+
+  # Redis URL
+  REDIS_URL: "redis://redis:6379"
+
+  # Gateway ports
+  GATEWAY_PORT: "4000"
+  SHUTTLE_PORT: "4001"
+  SEAT_PORT: "4002"
+  PRICING_PORT: "4003"
+  BOOKING_PORT: "4004"
+  PAYMENT_PORT: "4005"
+  PROMO_PORT: "4006"
+  NOTIFICATION_PORT: "4007"

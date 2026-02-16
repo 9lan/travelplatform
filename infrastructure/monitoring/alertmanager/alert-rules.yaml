@@ -1,0 +1,202 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+data:
+  travelplatform-alerts.yaml: |
+    groups:
+      - name: travelplatform-service-alerts
+        rules:
+          # Service Down
+          - alert: ServiceDown
+            expr: up{job="travelplatform-services"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service {{ $labels.service }} is down"
+              description: "Service {{ $labels.service }} in namespace {{ $labels.namespace }} has been down for more than 1 minute."
+
+          # High Error Rate
+          - alert: HighErrorRate
+            expr: |
+              sum(rate(http_requests_total{status=~"5..", job="travelplatform-services"}[5m])) by (service)
+              /
+              sum(rate(http_requests_total{job="travelplatform-services"}[5m])) by (service)
+              > 0.05
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate on {{ $labels.service }}"
+              description: "Service {{ $labels.service }} has error rate above 5% for more than 2 minutes. Current rate: {{ $value | humanizePercentage }}"
+
+          # High Latency (p95 > 2s)
+          - alert: HighLatency
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="travelplatform-services"}[5m])) by (le, service))
+              > 2
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High latency on {{ $labels.service }}"
+              description: "Service {{ $labels.service }} p95 latency is above 2 seconds. Current p95: {{ $value | humanizeDuration }}"
+
+          # Pod Restart Loop
+          - alert: PodRestartLoop
+            expr: |
+              increase(kube_pod_container_status_restarts_total{namespace="travelplatform"}[1h]) > 5
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.pod }} is restarting frequently"
+              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last hour."
+
+          # High Memory Usage
+          - alert: HighMemoryUsage
+            expr: |
+              container_memory_usage_bytes{namespace="travelplatform"}
+              /
+              container_spec_memory_limit_bytes{namespace="travelplatform"}
+              > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} memory usage is above 90%. Current usage: {{ $value | humanizePercentage }}"
+
+          # High CPU Usage
+          - alert: HighCPUUsage
+            expr: |
+              sum(rate(container_cpu_usage_seconds_total{namespace="travelplatform"}[5m])) by (pod)
+              /
+              sum(container_spec_cpu_quota{namespace="travelplatform"}/container_spec_cpu_period{namespace="travelplatform"}) by (pod)
+              > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on {{ $labels.pod }}"
+              description: "Pod {{ $labels.pod }} CPU usage is above 90%. Current usage: {{ $value | humanizePercentage }}"
+
+      - name: travelplatform-database-alerts
+        rules:
+          # PostgreSQL Connection Failure
+          - alert: PostgreSQLConnectionFailure
+            expr: pg_up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "PostgreSQL {{ $labels.database }} is unreachable"
+              description: "Cannot connect to PostgreSQL database {{ $labels.database }} for more than 1 minute."
+
+          # PostgreSQL High Connections
+          - alert: PostgreSQLHighConnections
+            expr: |
+              pg_stat_activity_count
+              /
+              pg_settings_max_connections
+              > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High connection count on {{ $labels.database }}"
+              description: "PostgreSQL {{ $labels.database }} has {{ $value | humanizePercentage }} of max connections in use."
+
+          # PostgreSQL Slow Queries
+          - alert: PostgreSQLSlowQueries
+            expr: |
+              rate(pg_stat_activity_max_tx_duration{state="active"}[1m]) > 60
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Slow queries detected on {{ $labels.database }}"
+              description: "PostgreSQL {{ $labels.database }} has queries running longer than 60 seconds."
+
+      - name: travelplatform-redis-alerts
+        rules:
+          # Redis Connection Failure
+          - alert: RedisConnectionFailure
+            expr: redis_up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Redis is unreachable"
+              description: "Cannot connect to Redis for more than 1 minute."
+
+          # Redis High Memory Usage
+          - alert: RedisHighMemory
+            expr: |
+              redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Redis memory usage is high"
+              description: "Redis is using {{ $value | humanizePercentage }} of max memory."
+
+          # Redis Connected Clients High
+          - alert: RedisHighClients
+            expr: redis_connected_clients > 100
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High Redis client count"
+              description: "Redis has {{ $value }} connected clients."
+
+      - name: travelplatform-infrastructure-alerts
+        rules:
+          # Node Not Ready
+          - alert: NodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Node {{ $labels.node }} is not ready"
+              description: "Kubernetes node {{ $labels.node }} has been in NotReady state for more than 5 minutes."
+
+          # High Node Memory
+          - alert: HighNodeMemory
+            expr: |
+              (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on node {{ $labels.node }}"
+              description: "Node {{ $labels.node }} memory usage is above 90%."
+
+          # High Node Disk Usage
+          - alert: HighNodeDisk
+            expr: |
+              (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 0.85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High disk usage on node {{ $labels.node }}"
+              description: "Node {{ $labels.node }} disk usage is above 85%."
+
+          # PersistentVolume Running Low
+          - alert: PersistentVolumeRunningLow
+            expr: |
+              kubelet_volume_stats_available_bytes{namespace="travelplatform"}
+              /
+              kubelet_volume_stats_capacity_bytes{namespace="travelplatform"}
+              < 0.2
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "PersistentVolume {{ $labels.persistentvolumeclaim }} running low"
+              description: "PersistentVolume {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} has less than 20% space remaining."
