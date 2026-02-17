@@ -24,7 +24,7 @@ Single-node cluster running k3s lightweight Kubernetes.
 - **Docker**: v29.2.1 (for building images)
 - **kubectl**: Latest stable
 - **Helm**: v3.20.0
-- **NGINX Ingress Controller**: For external traffic routing
+- **Traefik Ingress Controller**: Built-in k3s ingress (ports 80/443)
 - **cert-manager**: For automatic TLS certificates (Let's Encrypt)
 - **Prometheus Stack**: For monitoring and alerting
   - Prometheus
@@ -60,7 +60,7 @@ Internet
 Cloudflare (Proxy)
     │
     ▼
-NGINX Ingress (NodePort 31388/31223)
+Traefik Ingress (ports 80/443)
     │
     ▼
 Gateway Service (:4000)

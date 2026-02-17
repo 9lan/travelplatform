@@ -1,12 +1,6 @@
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-ingress
-  namespace: travelplatform
-spec:
-  podSelector: {}
-  policyTypes:
-    - Ingress
+# Network policies for TravelPlatform
+# Note: Using permissive policies for k3s/Traefik setup
+# For production hardening, add more restrictive policies after deployment is stable
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -20,10 +14,19 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Allow from Traefik (k3s default ingress controller in kube-system)
     - from:
         - namespaceSelector:
             matchLabels:
-              name: ingress-nginx
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 4000
+    # Allow from NGINX Ingress (if used instead of Traefik)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
       ports:
         - protocol: TCP
           port: 4000
