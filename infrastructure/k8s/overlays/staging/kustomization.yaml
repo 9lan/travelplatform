@@ -6,35 +6,52 @@ namespace: travelplatform-staging
 resources:
   - ../../base
 
-nameSuffix: ""
+labels:
+  - pairs:
+      environment: staging
 
-commonLabels:
-  environment: staging
-
-# Override namespace
 patches:
+  # Override namespace in all resources
   - patch: |-
       - op: replace
-        path: /metadata/name
+        path: /metadata/namespace
         value: travelplatform-staging
     target:
-      kind: Namespace
+      kind: ConfigMap
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: travelplatform-staging
+    target:
+      kind: Secret
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: travelplatform-staging
+    target:
+      kind: Deployment
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: travelplatform-staging
+    target:
+      kind: Service
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: travelplatform-staging
+    target:
+      kind: Ingress
 
-# Staging-specific configuration
-configMapGenerator:
-  - name: services-config
-    behavior: merge
-    literals:
-      - NODE_ENV=staging
-
-# Lower resources for staging
-patches:
+  # Lower replicas for staging
   - patch: |-
       - op: replace
         path: /spec/replicas
         value: 1
     target:
       kind: Deployment
+
+  # Staging HPA
   - patch: |-
       - op: replace
         path: /spec/minReplicas
@@ -44,48 +61,40 @@ patches:
         value: 3
     target:
       kind: HorizontalPodAutoscaler
-  - patch: |-
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/memory
-        value: "128Mi"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/requests/cpu
-        value: "50m"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/memory
-        value: "256Mi"
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: "250m"
-    target:
-      kind: Deployment
 
-# Staging ingress host
-patches:
+  # Staging ingress host
   - patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: staging-api.travelplatform.com
+        value: stg-app.kadokadi.com
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: staging-api.travelplatform.com
+        value: stg-app.kadokadi.com
     target:
       kind: Ingress
 
 images:
   - name: ghcr.io/travelplatform/gateway
-    newTag: staging
+    newName: docker.io/travelplatform/gateway
+    newTag: latest
   - name: ghcr.io/travelplatform/shuttle-service
-    newTag: staging
+    newName: docker.io/travelplatform/shuttle-service
+    newTag: latest
   - name: ghcr.io/travelplatform/seat-service
-    newTag: staging
+    newName: docker.io/travelplatform/seat-service
+    newTag: latest
   - name: ghcr.io/travelplatform/pricing-service
-    newTag: staging
+    newName: docker.io/travelplatform/pricing-service
+    newTag: latest
   - name: ghcr.io/travelplatform/booking-service
-    newTag: staging
+    newName: docker.io/travelplatform/booking-service
+    newTag: latest
   - name: ghcr.io/travelplatform/payment-service
-    newTag: staging
+    newName: docker.io/travelplatform/payment-service
+    newTag: latest
   - name: ghcr.io/travelplatform/promo-service
-    newTag: staging
+    newName: docker.io/travelplatform/promo-service
+    newTag: latest
   - name: ghcr.io/travelplatform/notification-service
-    newTag: staging
+    newName: docker.io/travelplatform/notification-service
+    newTag: latest

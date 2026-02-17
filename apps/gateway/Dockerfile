@@ -1,32 +1,38 @@
 FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN apk add --no-cache libc6-compat
 
-FROM base AS deps
+FROM base AS builder
 WORKDIR /app
+
+# Copy workspace files
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/gateway/package.json ./apps/gateway/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/shared-utils/package.json ./packages/shared-utils/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+
+# Install all dependencies
 RUN pnpm install --frozen-lockfile
 
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/gateway/node_modules ./apps/gateway/node_modules
-COPY --from=deps /app/packages ./packages
-COPY . .
+# Copy source code
+COPY apps/gateway ./apps/gateway
+COPY packages ./packages
+
+# Build packages and app
 RUN pnpm --filter @travelplatform/shared-types build
 RUN pnpm --filter @travelplatform/shared-utils build
 RUN pnpm --filter @travelplatform/gateway build
 
-FROM base AS runner
+# Deploy the app with all its dependencies
+RUN pnpm --filter @travelplatform/gateway deploy --prod /deploy
+
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/apps/gateway/dist ./dist
-COPY --from=builder /app/apps/gateway/node_modules ./node_modules
-COPY --from=builder /app/apps/gateway/package.json ./
+# Copy the deployed app
+COPY --from=builder /deploy ./
 
 EXPOSE 4000
 

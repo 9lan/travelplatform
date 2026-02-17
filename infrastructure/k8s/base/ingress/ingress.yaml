@@ -15,10 +15,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - api.travelplatform.com
+        - app.kadokadi.com
       secretName: travelplatform-tls
   rules:
-    - host: api.travelplatform.com
+    - host: app.kadokadi.com
       http:
         paths:
           - path: /graphql
