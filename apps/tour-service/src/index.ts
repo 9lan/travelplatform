@@ -36,7 +36,7 @@ function extractUserFromHeaders(req: express.Request): UserContext | null {
 
 async function main() {
   const app = express();
-  const port = process.env.PORT || 4010;
+  const port = process.env['PORT'] ?? 4010;
 
   // Health check
   app.get('/health', async (_req, res) => {

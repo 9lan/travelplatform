@@ -2,6 +2,7 @@
   "name": "@travelplatform/tour-service",
   "version": "0.0.1",
   "private": true,
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch --env-file .env src/index.ts",
@@ -11,7 +12,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",
