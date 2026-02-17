@@ -138,10 +138,12 @@ kubectl rollout restart deployment/<service-name> -n travelplatform
 
 ### Access Grafana
 ```bash
-# Port forward locally
+# Via domain (requires DNS record for grafana.kadokadi.com)
+http://grafana.kadokadi.com
+
+# Or port forward locally
 kubectl -n monitoring port-forward svc/prometheus-grafana 3000:80
 
-# Or access via NodePort
 # Default credentials: admin / admin
 ```
 
