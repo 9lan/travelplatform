@@ -12,39 +12,36 @@ This document describes how to access the PostgreSQL databases and Redis from ex
 
 ## Database Credentials
 
-| Database | Service Name | Internal Port | Username | Password | Database |
-|----------|--------------|---------------|----------|----------|----------|
-| Shuttle | postgres-shuttle | 5432 | shuttle | shuttle_pass | shuttle |
-| Seat | postgres-seat | 5432 | seat | seat_pass | seat |
-| Pricing | postgres-pricing | 5432 | pricing | pricing_pass | pricing |
-| Booking | postgres-booking | 5432 | booking | booking_pass | booking |
-| Payment | postgres-payment | 5432 | payment | payment_pass | payment |
-| Promo | postgres-promo | 5432 | promo | promo_pass | promo |
-| Notification | postgres-notification | 5432 | notification | notification_pass | notification |
-| Redis | redis | 6379 | - | - | - |
+| Database | Proxy Port | Username | Password | Database |
+|----------|------------|----------|----------|----------|
+| Shuttle | 15501 | shuttle | shuttle_pass | shuttle |
+| Seat | 15502 | seat | seat_pass | seat |
+| Pricing | 15503 | pricing | pricing_pass | pricing |
+| Booking | 15504 | booking | booking_pass | booking |
+| Payment | 15505 | payment | payment_pass | payment |
+| Promo | 15506 | promo | promo_pass | promo |
+| Notification | 15507 | notification | notification_pass | notification |
+| Redis | 16379 | - | - | - |
 
 ## Method 1: SSH Tunnel (Recommended)
 
-SSH tunneling is the most secure way to access the databases.
+A database proxy service runs on the server to forward connections. Use SSH tunneling to access it securely.
 
 ### One-time SSH Tunnel
 
 ```bash
-# Shuttle database (local port 5501 -> postgres-shuttle:5432)
-ssh -L 5501:postgres-shuttle.travelplatform.svc.cluster.local:5432 root@185.207.105.80
-
-# Seat database
-ssh -L 5502:postgres-seat.travelplatform.svc.cluster.local:5432 root@185.207.105.80
+# Shuttle database (local port 5501 -> server proxy 15501)
+ssh -L 5501:127.0.0.1:15501 root@185.207.105.80
 
 # All databases at once
-ssh -L 5501:postgres-shuttle.travelplatform.svc.cluster.local:5432 \
-    -L 5502:postgres-seat.travelplatform.svc.cluster.local:5432 \
-    -L 5503:postgres-pricing.travelplatform.svc.cluster.local:5432 \
-    -L 5504:postgres-booking.travelplatform.svc.cluster.local:5432 \
-    -L 5505:postgres-payment.travelplatform.svc.cluster.local:5432 \
-    -L 5506:postgres-promo.travelplatform.svc.cluster.local:5432 \
-    -L 5507:postgres-notification.travelplatform.svc.cluster.local:5432 \
-    -L 6380:redis.travelplatform.svc.cluster.local:6379 \
+ssh -L 5501:127.0.0.1:15501 \
+    -L 5502:127.0.0.1:15502 \
+    -L 5503:127.0.0.1:15503 \
+    -L 5504:127.0.0.1:15504 \
+    -L 5505:127.0.0.1:15505 \
+    -L 5506:127.0.0.1:15506 \
+    -L 5507:127.0.0.1:15507 \
+    -L 6380:127.0.0.1:16379 \
     root@185.207.105.80
 ```
 
@@ -61,8 +58,8 @@ ssh -L 5501:postgres-shuttle.travelplatform.svc.cluster.local:5432 \
    - **Password**: (from .env.ssh)
 5. Go to **Main** tab
 6. Configure:
-   - **Host**: `postgres-shuttle.travelplatform.svc.cluster.local` (or other service name)
-   - **Port**: `5432`
+   - **Host**: `127.0.0.1`
+   - **Port**: `15501` (shuttle) or other proxy port from table above
    - **Database**: `shuttle` (or matching database name)
    - **Username**: `shuttle` (or matching username)
    - **Password**: `shuttle_pass` (or matching password)
@@ -125,38 +122,19 @@ redis://localhost:6380
 
 ## SSH Tunnel Helper Script
 
-Save this as `db-tunnel.sh`:
+Use `./infrastructure/scripts/db-tunnel.sh` or run manually:
 
 ```bash
-#!/bin/bash
-# TravelPlatform Database SSH Tunnel
-
-SSH_HOST="root@185.207.105.80"
-NAMESPACE="travelplatform"
-
-echo "Starting SSH tunnel to TravelPlatform databases..."
-echo "Local ports:"
-echo "  5501 -> postgres-shuttle"
-echo "  5502 -> postgres-seat"
-echo "  5503 -> postgres-pricing"
-echo "  5504 -> postgres-booking"
-echo "  5505 -> postgres-payment"
-echo "  5506 -> postgres-promo"
-echo "  5507 -> postgres-notification"
-echo "  6380 -> redis"
-echo ""
-echo "Press Ctrl+C to close the tunnel"
-
 ssh -N \
-    -L 5501:postgres-shuttle.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5502:postgres-seat.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5503:postgres-pricing.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5504:postgres-booking.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5505:postgres-payment.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5506:postgres-promo.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 5507:postgres-notification.${NAMESPACE}.svc.cluster.local:5432 \
-    -L 6380:redis.${NAMESPACE}.svc.cluster.local:6379 \
-    ${SSH_HOST}
+    -L 5501:127.0.0.1:15501 \
+    -L 5502:127.0.0.1:15502 \
+    -L 5503:127.0.0.1:15503 \
+    -L 5504:127.0.0.1:15504 \
+    -L 5505:127.0.0.1:15505 \
+    -L 5506:127.0.0.1:15506 \
+    -L 5507:127.0.0.1:15507 \
+    -L 6380:127.0.0.1:16379 \
+    root@185.207.105.80
 ```
 
 ## Security Notes
