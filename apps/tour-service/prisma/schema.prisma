@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+enum TourType {
+  AGGREGATED
+  CUSTOM
+}
+
+enum TourSource {
+  INTERNAL
+  KLOOK
+  VIATOR
+  LOCAL_OPERATOR
+}
+
+enum TourStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MODERATE
+  CHALLENGING
+}
+
+enum ComponentType {
+  ACCOMMODATION
+  TRANSPORT
+  ACTIVITY
+  MEAL
+  GUIDE
+}
+
+// DESTINATION & CATEGORY
+model Destination {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  country   String
+  timezone  String
+  latitude  Float
+  longitude Float
+  imageUrl  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tours Tour[]
+
+  @@index([country])
+  @@index([isActive])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?
+  parentId  String?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tours TourCategory[]
+
+  @@index([parentId])
+}
+
+// TOUR
+model Tour {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  slug          String      @unique
+  description   String?
+  type          TourType
+  source        TourSource
+  providerId    String?
+  providerRef   String?
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id])
+  durationDays  Int
+  durationNights Int
+  difficulty    Difficulty  @default(EASY)
+  minPax        Int         @default(1)
+  maxPax        Int
+  basePrice     Decimal     @db.Decimal(15, 2)
+  currency      String      @default("IDR")
+  highlights    String[]
+  inclusions    String[]
+  exclusions    String[]
+  images        Json        @default("[]")
+  metadata      Json        @default("{}")
+  status        TourStatus  @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  categories  TourCategory[]
+  themes      TourTheme[]
+  itinerary   Itinerary[]
+
+  @@index([destinationId])
+  @@index([status])
+  @@index([type, source])
+  @@index([providerId])
+}
+
+model TourCategory {
+  id         String   @id @default(cuid())
+  tourId     String
+  tour       Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([tourId, categoryId])
+  @@index([categoryId])
+}
+
+model TourTheme {
+  id        String   @id @default(cuid())
+  tourId    String
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  theme     String
+  createdAt DateTime @default(now())
+
+  @@unique([tourId, theme])
+  @@index([theme])
+}
+
+// ITINERARY
+model Itinerary {
+  id          String   @id @default(cuid())
+  tourId      String
+  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items ItineraryItem[]
+
+  @@unique([tourId, dayNumber])
+  @@index([tourId])
+}
+
+model ItineraryItem {
+  id            String        @id @default(cuid())
+  itineraryId   String
+  itinerary     Itinerary     @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  sequence      Int
+  componentType ComponentType
+  componentId   String
+  startTime     String?
+  endTime       String?
+  isOptional    Boolean       @default(false)
+  priceOverride Decimal?      @db.Decimal(15, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([itineraryId, sequence])
+  @@index([itineraryId])
+  @@index([componentType, componentId])
+}
+
+// SEARCH METADATA
+model TourSearchMetadata {
+  id              String   @id @default(cuid())
+  tourId          String   @unique
+  bookingCount    Int      @default(0)
+  viewCount       Int      @default(0)
+  avgRating       Float?
+  reviewCount     Int      @default(0)
+  popularityScore Float    @default(0)
+  lastSyncedAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([popularityScore])
+}
