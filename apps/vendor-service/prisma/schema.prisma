@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VendorType {
+  OPERATOR
+  HOTEL
+  ACTIVITY
+  GUIDE
+  RESTAURANT
+  TRANSPORT
+}
+
+enum VendorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+model Vendor {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  name            String
+  type            VendorType
+  status          VendorStatus @default(PENDING)
+  email           String
+  phone           String?
+  website         String?
+  description     String?
+  address         String?
+  city            String?
+  country         String?
+  logoUrl         String?
+  commissionRate  Decimal      @db.Decimal(5, 2)
+  bankName        String?
+  bankAccount     String?
+  bankHolder      String?
+  taxId           String?
+  documents       Json         @default("[]")
+  metadata        Json         @default("{}")
+  verifiedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  users    VendorUser[]
+  products VendorProduct[]
+
+  @@index([type])
+  @@index([status])
+  @@index([city, country])
+}
+
+model VendorUser {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  userId    String
+  email     String
+  name      String
+  role      UserRole @default(STAFF)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([vendorId, userId])
+  @@index([vendorId])
+  @@index([userId])
+}
+
+model VendorProduct {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  productType String   // tour, component
+  productId   String   // Reference to Tour or Component
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([vendorId, productType, productId])
+  @@index([vendorId])
+  @@index([productType, productId])
+}

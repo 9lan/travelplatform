@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ComponentType {
+  ACCOMMODATION
+  TRANSPORT
+  ACTIVITY
+  MEAL
+  GUIDE
+}
+
+enum ComponentStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum AvailabilityType {
+  TIMESLOT
+  DAILY_QUOTA
+  ON_REQUEST
+}
+
+model Component {
+  id               String           @id @default(cuid())
+  code             String           @unique
+  name             String
+  type             ComponentType
+  status           ComponentStatus  @default(DRAFT)
+  vendorId         String?
+  description      String?
+  shortDescription String?
+  location         String?
+  latitude         Float?
+  longitude        Float?
+  duration         Int?             // minutes
+  basePrice        Decimal          @db.Decimal(15, 2)
+  currency         String           @default("IDR")
+  maxCapacity      Int?
+  minPax           Int              @default(1)
+  maxPax           Int?
+  availabilityType AvailabilityType @default(DAILY_QUOTA)
+  images           Json             @default("[]")
+  amenities        String[]
+  policies         Json             @default("{}")
+  metadata         Json             @default("{}")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  pricing ComponentPricing[]
+
+  @@index([type])
+  @@index([status])
+  @@index([vendorId])
+  @@index([location])
+}
+
+model ComponentPricing {
+  id           String    @id @default(cuid())
+  componentId  String
+  component    Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  name         String    // Standard, Peak, Off-peak
+  priceAmount  Decimal   @db.Decimal(15, 2)
+  currency     String    @default("IDR")
+  minPax       Int       @default(1)
+  maxPax       Int?
+  validFrom    DateTime?
+  validTo      DateTime?
+  daysOfWeek   Int[]     // 0-6, Sunday=0
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([componentId])
+  @@index([validFrom, validTo])
+}

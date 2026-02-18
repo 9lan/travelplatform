@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanySize {
+  SME
+  ENTERPRISE
+  GOVERNMENT
+}
+
+enum RFQStatus {
+  SUBMITTED
+  IN_PROGRESS
+  QUOTED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  REVISED
+  ACCEPTED
+  REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Company {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  size          CompanySize
+  industry      String?
+  email         String
+  phone         String?
+  website       String?
+  address       String?
+  city          String?
+  country       String?
+  taxId         String?
+  creditLimit   Decimal?    @db.Decimal(15, 2)
+  paymentTerms  Int         @default(30)  // days
+  metadata      Json        @default("{}")
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  contacts      CompanyContact[]
+  rfqs          RFQ[]
+
+  @@index([size])
+  @@index([industry])
+}
+
+model CompanyContact {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String?
+  name      String
+  email     String
+  phone     String?
+  title     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([userId])
+}
+
+model RFQ {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+  contactId     String?
+  title         String
+  description   String?
+  eventType     String?   // MICE: meeting, incentive, conference, exhibition
+  paxCount      Int
+  startDate     DateTime
+  endDate       DateTime
+  destinations  String[]
+  budget        Decimal?  @db.Decimal(15, 2)
+  currency      String    @default("IDR")
+  requirements  Json      @default("{}")
+  status        RFQStatus @default(SUBMITTED)
+  submittedAt   DateTime  @default(now())
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  quotations Quotation[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Quotation {
+  id              String          @id @default(cuid())
+  code            String          @unique
+  rfqId           String
+  rfq             RFQ             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  version         Int             @default(1)
+  title           String
+  description     String?
+  totalAmount     Decimal         @db.Decimal(15, 2)
+  currency        String          @default("IDR")
+  lineItems       Json            @default("[]")
+  terms           String?
+  validUntil      DateTime
+  status          QuotationStatus @default(DRAFT)
+  sentAt          DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  approvals QuotationApproval[]
+
+  @@index([rfqId])
+  @@index([status])
+}
+
+model QuotationApproval {
+  id          String         @id @default(cuid())
+  quotationId String
+  quotation   Quotation      @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  approverId  String
+  approverName String
+  level       Int            @default(1)
+  status      ApprovalStatus @default(PENDING)
+  comments    String?
+  decidedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([quotationId])
+  @@index([approverId])
+  @@index([status])
+}

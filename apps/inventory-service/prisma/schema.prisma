@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InventoryType {
+  ALLOTMENT
+  ON_REQUEST
+}
+
+enum HoldStatus {
+  ACTIVE
+  RELEASED
+  CONVERTED
+  EXPIRED
+}
+
+model InventoryPool {
+  id              String        @id @default(cuid())
+  tourId          String
+  date            DateTime      @db.Date
+  inventoryType   InventoryType
+  totalQuantity   Int
+  availableQty    Int
+  holdQty         Int           @default(0)
+  soldQty         Int           @default(0)
+  minLeadHours    Int           @default(24)
+  cutoffTime      String?       // HH:mm format
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  holds InventoryHold[]
+
+  @@unique([tourId, date])
+  @@index([tourId])
+  @@index([date])
+  @@index([inventoryType])
+}
+
+model InventoryHold {
+  id            String      @id @default(cuid())
+  poolId        String
+  pool          InventoryPool @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  bookingId     String?
+  quantity      Int
+  status        HoldStatus  @default(ACTIVE)
+  expiresAt     DateTime
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([poolId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model ComponentInventory {
+  id            String        @id @default(cuid())
+  componentId   String
+  componentType String
+  date          DateTime      @db.Date
+  timeSlot      String?       // HH:mm format for timeslot-based
+  inventoryType InventoryType
+  totalQuantity Int
+  availableQty  Int
+  holdQty       Int           @default(0)
+  soldQty       Int           @default(0)
+  priceAmount   Decimal       @db.Decimal(15, 2)
+  priceCurrency String        @default("IDR")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  holds ComponentHold[]
+
+  @@unique([componentId, date, timeSlot])
+  @@index([componentId])
+  @@index([date])
+  @@index([componentType])
+}
+
+model ComponentHold {
+  id            String             @id @default(cuid())
+  inventoryId   String
+  inventory     ComponentInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  bookingId     String?
+  quantity      Int
+  status        HoldStatus         @default(ACTIVE)
+  expiresAt     DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([inventoryId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([expiresAt])
+}
