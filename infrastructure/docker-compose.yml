@@ -128,6 +128,89 @@ services:
       timeout: 5s
       retries: 5
 
+  # ─────────────────────────────────────────────
+  # Tour Vertical Databases
+  # ─────────────────────────────────────────────
+  postgres-tour:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tour
+      POSTGRES_PASSWORD: tour_dev
+      POSTGRES_DB: tour
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_tour:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tour"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-inventory:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: inventory_dev
+      POSTGRES_DB: inventory
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_inventory:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-vendor:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vendor
+      POSTGRES_PASSWORD: vendor_dev
+      POSTGRES_DB: vendor
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_vendor:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vendor"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-component:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: component
+      POSTGRES_PASSWORD: component_dev
+      POSTGRES_DB: component
+    ports:
+      - "5443:5432"
+    volumes:
+      - postgres_component:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U component"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-corporate:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: corporate
+      POSTGRES_PASSWORD: corporate_dev
+      POSTGRES_DB: corporate
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_corporate:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corporate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_shuttle:
   postgres_seat:
@@ -136,4 +219,9 @@ volumes:
   postgres_payment:
   postgres_promo:
   postgres_notification:
+  postgres_tour:
+  postgres_inventory:
+  postgres_vendor:
+  postgres_component:
+  postgres_corporate:
   redis_data:

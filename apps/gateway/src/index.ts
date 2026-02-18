@@ -21,6 +21,7 @@ export interface GatewayContext {
 }
 
 const SUBGRAPHS = [
+  // Shuttle vertical
   { name: 'shuttle', url: process.env['SHUTTLE_SERVICE_URL'] ?? 'http://localhost:4001/graphql' },
   { name: 'seat', url: process.env['SEAT_SERVICE_URL'] ?? 'http://localhost:4002/graphql' },
   { name: 'pricing', url: process.env['PRICING_SERVICE_URL'] ?? 'http://localhost:4003/graphql' },
@@ -28,6 +29,12 @@ const SUBGRAPHS = [
   { name: 'payment', url: process.env['PAYMENT_SERVICE_URL'] ?? 'http://localhost:4005/graphql' },
   { name: 'promo', url: process.env['PROMO_SERVICE_URL'] ?? 'http://localhost:4006/graphql' },
   { name: 'notification', url: process.env['NOTIFICATION_SERVICE_URL'] ?? 'http://localhost:4007/graphql' },
+  // Tour vertical
+  { name: 'tour', url: process.env['TOUR_SERVICE_URL'] ?? 'http://localhost:4010/graphql' },
+  { name: 'inventory', url: process.env['INVENTORY_SERVICE_URL'] ?? 'http://localhost:4011/graphql' },
+  { name: 'vendor', url: process.env['VENDOR_SERVICE_URL'] ?? 'http://localhost:4012/graphql' },
+  { name: 'component', url: process.env['COMPONENT_SERVICE_URL'] ?? 'http://localhost:4013/graphql' },
+  { name: 'corporate', url: process.env['CORPORATE_SERVICE_URL'] ?? 'http://localhost:4014/graphql' },
 ];
 
 class AuthenticatedDataSource extends RemoteGraphQLDataSource<GatewayContext> {
