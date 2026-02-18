@@ -108,9 +108,10 @@ model Tour {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  categories  TourCategory[]
-  themes      TourTheme[]
-  itinerary   Itinerary[]
+  categories     TourCategory[]
+  themes         TourTheme[]
+  itinerary      Itinerary[]
+  searchMetadata TourSearchMetadata?
 
   @@index([destinationId])
   @@index([status])
@@ -123,7 +124,7 @@ model TourCategory {
   tourId     String
   tour       Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
   categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   createdAt  DateTime @default(now())
 
   @@unique([tourId, categoryId])
@@ -182,6 +183,7 @@ model ItineraryItem {
 model TourSearchMetadata {
   id              String   @id @default(cuid())
   tourId          String   @unique
+  tour            Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
   bookingCount    Int      @default(0)
   viewCount       Int      @default(0)
   avgRating       Float?
